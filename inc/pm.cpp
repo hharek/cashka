@@ -12,7 +12,7 @@
 #include "options.h"
 #include "pm.h"
 
-//extern char ** environ;
+extern char ** environ;
 
 using std::cout;
 using std::endl;
@@ -176,8 +176,8 @@ namespace cashka
 	 */
 	void PM::set_process_title (const char * title)
 	{
-//		/* Копируем переменую environ */
-//		this->environ_copy();
+		/* Копируем переменую environ */
+		this->environ_copy();
 		
 		/* Оригинальный argv */
 		char ** argv = options.get_argv();
@@ -198,8 +198,8 @@ namespace cashka
 		/* Прописываем имя потока */
 		prctl (PR_SET_NAME, title, 0, 0, 0);
 		
-//		/* Переменная environ указывает на новый участок */
-//		environ = this->_environ;
+		/* Переменная environ указывает на новый участок со старыми значениями */
+		environ = this->_environ;
 	}
 	
 	/**
@@ -207,7 +207,7 @@ namespace cashka
 	 */
 	void PM::environ_copy ()
 	{
-		int environ_size;
+		int environ_size = 0;
 		for (int i = 0; environ[i] != nullptr; i++)
 		{
 			environ_size++;

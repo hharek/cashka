@@ -23,9 +23,11 @@ namespace cashka
 
 			/* Копия переменной environ */
 			char ** _environ;
-			
-			/* Размер массива environ */
 			int _environ_size;
+			
+			/* Копия переменной argv */
+			char ** _argv;
+			int _argc;
 			
 		public:
 
