@@ -3,11 +3,12 @@ all: cashka
 
 # Clean
 clean:
-	rm -f lib/*
+	rm -rf lib
 	rm -f cashka cashka.pid
 
 # Cashka
 cashka: main.cpp \
+		lib \
 		inc/cashka.h \
 		lib/cashka.o \
 		inc/options.h \
@@ -18,6 +19,10 @@ cashka: main.cpp \
 		inc/pm.h \
 		lib/pm.o
 	g++ -Wall -o cashka lib/cashka.o lib/options.o lib/options_check.o lib/options_cli.o lib/options_config.o lib/pm.o main.cpp
+
+# lib-dir
+lib:
+	mkdir -p lib
 
 # Common functions
 lib/cashka.o: inc/cashka.h inc/cashka.cpp
