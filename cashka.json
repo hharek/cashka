@@ -1,0 +1,6 @@
+{
+	"process_name": "my-cashka",
+	"pid_file": "cashka.pid",
+	"host": "127.0.0.1",
+	"port": 3333
+}
