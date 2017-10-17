@@ -176,8 +176,9 @@ namespace cashka
 	 */
 	void PM::set_process_title (const char * title)
 	{
-		/* Копируем переменую environ */
+		/* Копируем переменые argv и environ */
 		this->environ_copy();
+		this->argv_copy();
 		
 		/* Оригинальный argv */
 		char ** argv = options.get_argv();
@@ -223,5 +224,25 @@ namespace cashka
 		
 		this->_environ_size = environ_size;
 		this->_environ = environ_copy;
+	}
+	
+	/**
+	 * Копируем переменную argv
+	 */
+	void PM::argv_copy ()
+	{
+		int argc = options.get_argc();
+		char ** argv = options.get_argv();
+		
+		char ** argv_copy = new char * [argc];
+
+		for (int i = 0; i < argc; i++)
+		{
+			argv_copy[i] = new char[strlen(argv[i]) + 1];
+			strcpy (argv_copy[i], argv[i]);
+		}
+		
+		this->_argc = argc;
+		this->_argv = argv_copy;
 	}
 }

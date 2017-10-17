@@ -43,7 +43,6 @@ int main (int argc, char ** argv)
 			pm.status();
 		}
 		
-		
 		return EXIT_SUCCESS;
 	}
 	catch (std::exception & ex)

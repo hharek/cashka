@@ -3,45 +3,45 @@ all: cashka
 
 # Clean
 clean:
-	rm -rf lib
+	rm -rf obj
 	rm -f cashka cashka.pid
 
 # Cashka
 cashka: main.cpp \
-		lib \
+		obj \
 		inc/cashka.h \
-		lib/cashka.o \
+		obj/cashka.o \
 		inc/options.h \
-		lib/options.o \
-		lib/options_check.o \
-		lib/options_cli.o \
-		lib/options_config.o \
+		obj/options.o \
+		obj/options_check.o \
+		obj/options_cli.o \
+		obj/options_config.o \
 		inc/pm.h \
-		lib/pm.o
-	g++ -Wall -o cashka lib/cashka.o lib/options.o lib/options_check.o lib/options_cli.o lib/options_config.o lib/pm.o main.cpp
+		obj/pm.o
+	g++ -Wall -o cashka obj/cashka.o obj/options.o obj/options_check.o obj/options_cli.o obj/options_config.o obj/pm.o main.cpp
 
-# lib-dir
-lib:
-	mkdir -p lib
+# obj-dir
+obj:
+	mkdir -p obj
 
 # Common functions
-lib/cashka.o: inc/cashka.h inc/cashka.cpp
-	g++ -Wall -c inc/cashka.cpp -o lib/cashka.o
+obj/cashka.o: inc/cashka.h inc/cashka.cpp
+	g++ -Wall -c inc/cashka.cpp -o obj/cashka.o
 
 # Options
-lib/options.o: inc/options.h inc/options.cpp
-	g++ -Wall -c inc/options.cpp -o lib/options.o
+obj/options.o: inc/options.h inc/options.cpp
+	g++ -Wall -c inc/options.cpp -o obj/options.o
 
-lib/options_check.o: inc/options.h inc/options_check.cpp
-	g++ -Wall -c inc/options_check.cpp -o lib/options_check.o
+obj/options_check.o: inc/options.h inc/options_check.cpp
+	g++ -Wall -c inc/options_check.cpp -o obj/options_check.o
 	
-lib/options_cli.o: inc/options.h inc/options_cli.cpp
-	g++ -Wall -c inc/options_cli.cpp -o lib/options_cli.o
+obj/options_cli.o: inc/options.h inc/options_cli.cpp
+	g++ -Wall -c inc/options_cli.cpp -o obj/options_cli.o
 
-lib/options_config.o: inc/options.h inc/options_config.cpp
-	g++ -Wall -c inc/options_config.cpp -o lib/options_config.o
+obj/options_config.o: inc/options.h inc/options_config.cpp
+	g++ -Wall -c inc/options_config.cpp -o obj/options_config.o
 
 # Process
-lib/pm.o: inc/pm.h inc/options.h inc/pm.cpp
-	g++ -Wall -c inc/pm.cpp -o lib/pm.o
+obj/pm.o: inc/pm.h inc/options.h inc/pm.cpp
+	g++ -Wall -c inc/pm.cpp -o obj/pm.o
 

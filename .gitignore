@@ -3,5 +3,6 @@ old
 test
 test.cpp
 cashka
+cashka.pid
 nbproject
-lib
+obj

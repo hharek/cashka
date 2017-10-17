@@ -60,8 +60,11 @@ namespace cashka
 			/* Сменить название процесса */
 			void set_process_title (const char * title);
 			
-			/* Скопировать переменну environ */
+			/* Скопировать переменную environ */
 			void environ_copy ();
+			
+			/* Скопировать переменную argv */
+			void argv_copy ();
 	};
 
 }
