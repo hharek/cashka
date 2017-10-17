@@ -1,5 +1,5 @@
 # cashka
-======
+
 Simple key-value storage
 
 REQUIREMENTS:
