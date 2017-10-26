@@ -25,7 +25,7 @@ namespace cashka
 			string config_file = "cashka.json";				/* Путь к конфигурационному файлу */
 			bool foreground = false;						/* Запускать процесс на переднем плане (не в фоне) */
 			string pid_file = "/var/run/cashka.pid";		/* Путь к PID-файлу */
-			string host = "127.0.0.1";						/* Имя хоста */
+			string host = "localhost";						/* Имя хоста */
 			unsigned int port = 3000;						/* Номер порта */
 			
 			/* ### Командная строка ### */

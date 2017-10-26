@@ -4,6 +4,7 @@
 #include <signal.h>
 
 #include "options.h"
+#include "server.h"
 
 namespace cashka
 {
@@ -28,6 +29,9 @@ namespace cashka
 			/* Копия переменной argv */
 			char ** _argv;
 			int _argc;
+			
+			/* Доступ к серверу */
+			Server * server;
 			
 		public:
 
@@ -60,11 +64,11 @@ namespace cashka
 			/* Сменить название процесса */
 			void set_process_title (const char * title);
 			
-			/* Скопировать переменную environ */
-			void environ_copy ();
+			/* Перенести «argv» в новую переменную и очистить старую область «argv». Необходимо для set_process_title */
+			void argv_move ();
 			
-			/* Скопировать переменную argv */
-			void argv_copy ();
+			/* Перенести «environ» в новую переменную и очистить старую область «environ». Необходимо для set_process_title */
+			void environ_move ();
 	};
 
 }

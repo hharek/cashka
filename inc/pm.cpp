@@ -11,6 +11,7 @@
 #include "cashka.h"
 #include "options.h"
 #include "pm.h"
+#include "server.h"
 
 extern char ** environ;
 
@@ -49,11 +50,9 @@ namespace cashka
 		/* Сменить название процесса */
 		this->set_process_title (options.get_process_name().c_str());
 		
-		/* Работа в фоне */
-		while (true)
-		{
-			sleep(10);
-		}
+		/* Запускаем сервак */
+		this->server = new Server (this->options);
+		this->server->start ();
 	}
 
 	/**
@@ -176,73 +175,79 @@ namespace cashka
 	 */
 	void PM::set_process_title (const char * title)
 	{
-		/* Копируем переменые argv и environ */
-		this->environ_copy();
-		this->argv_copy();
+		/* Переносим argv и environ в другое место и зачищаем занятую им область */
+		this->argv_move();
+		this->environ_move();
 		
-		/* Оригинальный argv */
+		/* Прописываем имя своего процесса в старую область argv */
 		char ** argv = options.get_argv();
-		
-		/* Определяем последнюю позицию environ */
-		char * end;
-		for (int i = 0; environ[i] != 0; i++)
-		{
-			end = environ[i] + strlen(environ[i]);
-		}
-
-		/* Затираем нулями argv и environ */
-		memset (argv[0], 0, (char *) end - (char *) argv[0]);
-
-		/* Прописываем имя своего процесса */
 		strcpy (argv[0], title);
 
 		/* Прописываем имя потока */
 		prctl (PR_SET_NAME, title, 0, 0, 0);
-		
-		/* Переменная environ указывает на новый участок со старыми значениями */
-		environ = this->_environ;
 	}
 	
 	/**
-	 * Копируем переменую environ
+	 * Перенести «argv» в новую переменную и очистить старую область «argv»
 	 */
-	void PM::environ_copy ()
-	{
-		int environ_size = 0;
-		for (int i = 0; environ[i] != nullptr; i++)
-		{
-			environ_size++;
-		}
-
-		char ** environ_copy = new char * [environ_size];
-
-		for (int i = 0; i < environ_size; i++)
-		{
-			environ_copy[i] = new char[strlen(environ[i]) + 1];
-			strcpy (environ_copy[i], environ[i]);
-		}
-		
-		this->_environ_size = environ_size;
-		this->_environ = environ_copy;
-	}
-	
-	/**
-	 * Копируем переменную argv
-	 */
-	void PM::argv_copy ()
+	void PM::argv_move ()
 	{
 		int argc = options.get_argc();
 		char ** argv = options.get_argv();
-		
-		char ** argv_copy = new char * [argc];
 
+		/* Переносим */
+		char ** copy = new char * [argc + 1];
 		for (int i = 0; i < argc; i++)
 		{
-			argv_copy[i] = new char[strlen(argv[i]) + 1];
-			strcpy (argv_copy[i], argv[i]);
+			/* Копируем в новый массив */
+			copy[i] = new char[strlen(argv[i]) + 1];
+			strcpy (copy[i], argv[i]);
+
+			/* Удаляем в старом */
+			memset (argv[i], 0, strlen(argv[i]));
 		}
-		
+
+		/* Последний элемент должен указывать на 0x00 */
+		copy[argc] = nullptr;
+
+		/* Назначаем переменным класса */
+		this->_argv = copy;
 		this->_argc = argc;
-		this->_argv = argv_copy;
+	}
+	
+	/**
+	 * Перенести «environ» в новую переменную и очистить старую область «environ». Необходимо для set_process_title
+	 */
+	void PM::environ_move ()
+	{
+		char ** copy;
+		int size = 0;
+
+		/* Вычисляем размер environ */
+		for (int i = 0; environ[i] != nullptr; i++)
+		{
+			size++;
+		}
+
+		/* Переносим */
+		copy = new char * [size + 1];
+		for (int i = 0; i < size; i++)
+		{
+			/* Копируем в новый массив */
+			copy[i] = new char[strlen(environ[i]) + 1];
+			strcpy (copy[i], environ[i]);
+
+			/* Удаляем в старом */
+			memset (environ[i], 0, strlen(environ[i]));
+		}
+
+		/* Последний элемент должен указывать на 0x00 */
+		copy[size] = nullptr;
+
+		/* Назначаем переменным класса */
+		this->_environ = copy;
+		
+		/* environ теперь укзывает на новый массив, но с такими же данными */
+		environ = this->_environ;
 	}
 }

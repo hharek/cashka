@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <exception>
+#include <stdexcept>
 
 #include "inc/cashka.h"
 #include "inc/options.h"
@@ -10,7 +11,8 @@
 
 using std::string;
 
-using namespace cashka;
+using cashka::Options;
+using cashka::PM;
 
 int main (int argc, char ** argv) 
 {

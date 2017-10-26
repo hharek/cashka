@@ -17,8 +17,10 @@ cashka: main.cpp \
 		obj/options_cli.o \
 		obj/options_config.o \
 		inc/pm.h \
-		obj/pm.o
-	g++ -Wall -o cashka obj/cashka.o obj/options.o obj/options_check.o obj/options_cli.o obj/options_config.o obj/pm.o main.cpp
+		obj/pm.o \
+		inc/server.h \
+		obj/server.o
+	g++ -Wall -o cashka obj/cashka.o obj/options.o obj/options_check.o obj/options_cli.o obj/options_config.o obj/pm.o obj/server.o main.cpp
 
 # obj-dir
 obj:
@@ -45,3 +47,6 @@ obj/options_config.o: inc/options.h inc/options_config.cpp
 obj/pm.o: inc/pm.h inc/options.h inc/pm.cpp
 	g++ -Wall -c inc/pm.cpp -o obj/pm.o
 
+# Server
+obj/server.o: inc/pm.h inc/server.h inc/options.h inc/server.cpp
+	g++ -Wall -c inc/server.cpp -o obj/server.o
