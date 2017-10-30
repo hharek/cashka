@@ -20,6 +20,7 @@ REQUIREMENTS:
 
 $ cashka -h
 ```
+Применение: cashka [ОПЦИИ] КОМАНДА
 Опции:
   -h    --help          - показать справку
   -v    --version       - показать версию программы и выйти
@@ -28,6 +29,7 @@ $ cashka -h
   -f    --foreground    - запустить процесс на переднем плане (не в фоне)
   -H    --host          - указать хост (по умолчанию: 127.0.0.1)
   -P    --port          - указать порт (по умолчанию: 3000)
+  -u    --unix-socket   - указать путь к unix-сокету
 
 Команды:
   start     - запуск сервера 
@@ -39,7 +41,12 @@ $ cashka -h
   cashka -h
   cashka --version
   cashka -p my.pid -c my.json start
+  cashka -H 127.0.0.1 -P 3000
+  cashka --unix-socket=cashka.sock
   cashka stop
   cashka restart
   cashka status
 ```
+### Другое
+- [CHANGELOG](https://github.com/hharek/cashka/wiki/CHANGELOG)
+- [ROADMAP](https://github.com/hharek/cashka/wiki/ROADMAP)
