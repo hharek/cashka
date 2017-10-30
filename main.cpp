@@ -24,9 +24,6 @@ int main (int argc, char ** argv)
 		opt.config ();
 		opt.merge ();
 		
-		std::cout << opt.dump() << std::endl;
-		exit (0);
-		
 		/* Менеджер процессов */
 		PM pm (opt);
 		
