@@ -61,11 +61,12 @@ namespace cashka
 		this->config_check_options (config);
 
 		/* Назначаем */
-		if (!config["process_name"].is_null())	{ this->config_process_name_set (config["process_name"]);		}
-		if (!config["pid_file"].is_null())		{ this->config_pid_file_set (config["pid_file"]);				}
+		if (!config["process-title"].is_null())	{ this->config_process_title_set (config["process-title"]);		}
+		if (!config["pid-file"].is_null())		{ this->config_pid_file_set (config["pid-file"]);				}
 		if (!config["foreground"].is_null())	{ this->config_foreground = config["foreground"].get<bool>();	}
 		if (!config["host"].is_null())			{ this->config_host_set (config["host"]);						}
 		if (!config["port"].is_null())			{ this->config_port_set (config["port"]);						}
+		if (!config["unix-socket"].is_null())	{ this->config_unix_socket_set (config["unix-socket"]);			}
 	}
 
 	/**
@@ -111,16 +112,16 @@ namespace cashka
 	/**
 	 * Проверить и назначить имя процесса
 	 * 
-	 * @param nlohmann::json & process_name
+	 * @param nlohmann::json & process_title
 	 * @return void
 	 */
-	void Options::config_process_name_set (json & process_name)
+	void Options::config_process_title_set (json & process_title)
 	{
-		string process_name_s = process_name.get<string>();
+		string process_title_s = process_title.get<string>();
 
-		this->check_process_name(process_name_s.c_str());
+		this->check_process_title(process_title_s.c_str());
 
-		this->config_process_name = process_name_s;
+		this->config_process_title = process_title_s;
 	}
 
 	/**
@@ -158,6 +159,17 @@ namespace cashka
 		this->check_port(port_int, "config");
 
 		this->config_port = (unsigned int)port_int;
+	}
+	
+	/**
+	 * Проверить и назначить путь к PID-файлу
+	 * 
+	 * @param nlohmann::json & unix_socket
+	 * @return void
+	 */
+	void Options::config_unix_socket_set (nlohmann::json & unix_socket)
+	{
+		this->config_unix_socket = unix_socket.get<string>();
 	}
 
 	/**

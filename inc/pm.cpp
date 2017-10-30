@@ -48,7 +48,7 @@ namespace cashka
 		this->pid_file_create();
 
 		/* Сменить название процесса */
-		this->set_process_title (options.get_process_name().c_str());
+		this->set_process_title (options.get_process_title().c_str());
 		
 		/* Запускаем сервак */
 		this->server = new Server (this->options);

@@ -62,25 +62,28 @@ namespace cashka
 			/* Закрыть сокет */
 			void stop ();
 			
-			/* Информация по сокету */
-			string socket_info ();
+			/* Информация по IP/TCP сокету  */
+			string socket_ip_info ();
 			
 		private:
 			
-			/* Создать сокет */
-			void socket_create ();
+			/* Создать IP/TCP сокет */
+			void socket_ip_create ();
+			
+			/* Создать unix-сокет */
+			void socket_unix_create ();
 			
 			/* Отлавливать соединения через select */
 			void socket_select ();
 			
 			/* Добавить нового клиента */
-			void client_add ();
+			void client_add (int master);
 			
 			/* Отключить клиента */
-			void client_close ();
+			void client_close (int socket);
 			
 			/* Прочитать сообщение от клиента */
-			void message_read ();
+			void client_message_read (int socket);
 	};
 }
 

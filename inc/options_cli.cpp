@@ -86,6 +86,12 @@ namespace cashka
 					this->cli_port_set (optarg);
 				}
 				break;
+				
+				case 'u':
+				{
+					this->cli_unix_socket_set (optarg);
+				}
+				break;
 
 				case '?':
 				{
@@ -148,6 +154,7 @@ namespace cashka
   -f    --foreground    - запустить процесс на переднем плане (не в фоне)
   -H    --host          - указать хост (по умолчанию: 127.0.0.1)
   -P    --port          - указать порт (по умолчанию: 3000)
+  -u    --unix-socket   - указать путь к unix-сокету
 
 Команды:
   start     - запуск сервера 
@@ -159,6 +166,8 @@ namespace cashka
   cashka -h
   cashka --version
   cashka -p my.pid -c my.json start
+  cashka -H 127.0.0.1 -P 3000
+  cashka --unix-socket=cashka.sock
   cashka stop
   cashka restart
   cashka status
@@ -227,4 +236,14 @@ namespace cashka
 		this->cli_port = (unsigned int)port_int;
 	}
 
+	/**
+	 * Назначить unix-сокет
+	 * 
+	 * @param const char * unix_socket
+	 * @return void
+	 */
+	void Options::cli_unix_socket_set (const char * unix_socket)
+	{
+		this->cli_unix_socket = unix_socket;
+	}
 }

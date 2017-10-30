@@ -8,6 +8,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/un.h>
 #include <exception>
 #include <stdexcept>
 #include <cstdio>
@@ -20,6 +21,8 @@
 #include "cashka.h"
 #include "options.h"
 #include "server.h"
+
+using std::string;
 
 namespace cashka
 {
@@ -37,7 +40,15 @@ namespace cashka
 	 */
 	void Server::start ()
 	{
-		this->socket_create();
+		if (this->options.get_unix_socket().empty())
+		{
+			this->socket_ip_create();
+		}
+		else
+		{
+			this->socket_unix_create();
+		}
+		
 		this->socket_select();
 	}
 	
@@ -56,7 +67,7 @@ namespace cashka
 	 * 
 	 * @return string
 	 */
-	string Server::socket_info ()
+	string Server::socket_ip_info ()
 	{
 		string info;
 		
@@ -106,11 +117,11 @@ namespace cashka
 	}
 	
 	/**
-	 * Создать сокет
+	 * Создать сокет 
 	 * 
 	 * @return void
 	 */
-	void Server::socket_create ()
+	void Server::socket_ip_create ()
 	{
 		struct addrinfo hints;
 		
@@ -171,6 +182,49 @@ namespace cashka
 			/* Следующий сокет */
 			i++;
 		}
+	}
+	
+	/**
+	 * Создать unix-сокет
+	 * 
+	 * @return void
+	 */
+	void Server::socket_unix_create ()
+	{
+		struct sockaddr_un hints;
+		memset (&hints, 0, sizeof (struct sockaddr_un));
+		hints.sun_family = AF_LOCAL;
+		strncpy (hints.sun_path, this->options.get_unix_socket().c_str(), sizeof (hints.sun_path) - 1);
+
+		this->master_count = 1;
+		this->master = new int [1];
+		
+		/* Создаём основной сокет */
+		if ((this->master[0] = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
+		{
+			err ((string)"Не удалось создать соединение. Подробнее: " + strerror(errno));
+		}
+
+		/* Избегаем ошибки: Адрес уже занят  */
+		int yes = 1;
+		if (setsockopt(this->master[0], SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) 
+		{
+			err ((string)"Не удалось создать соединение. Подробнее: " + strerror(errno));
+		}
+
+		/* bind, listen */
+		if ((bind (this->master[0], (const struct sockaddr *) &hints, sizeof(struct sockaddr_un))) == -1)
+		{
+			err ((string)"Не удалось создать соединение. Подробнее: " + strerror(errno));
+		}
+
+		if ((listen (this->master[0], 20)) == -1)
+		{
+			err ((string)"Не удалось создать соединение. Подробнее: " + strerror(errno));
+		}
+		
+		/* Делаем сокет неблокирующим */
+		fcntl (this->master[0], F_SETFL, O_NONBLOCK);
 	}
 	
 	/**
@@ -244,57 +298,13 @@ namespace cashka
 				/* Создаём новое соединение из мастера */
 				if (is_master)
 				{
-					int master = socket;
-					int socket_new;
-					struct sockaddr_storage their_addr;
-					socklen_t addr_size = sizeof their_addr;
-
-					if ((socket_new = accept (master, (struct sockaddr *)&their_addr, &addr_size)) == -1)
-					{
-						err ((string)"Ошибка сети. Этап «accept». Подробнее: " + strerror(errno));
-					}
-
-					if (socket_new > this->fd_max)
-					{
-						this->fd_max = socket_new;
-					}
-
-					int send_size = send (socket_new, this->msg_hello, strlen (this->msg_hello) + 1, 0);
-					if (send_size == -1)
-					{
-						err ((string)"Ошибка сети. Этап «send_hello». Подробнее: " + strerror(errno));
-					}
-
-					FD_SET (socket_new, &this->fd_all);
+					this->client_add (socket);
+					
 				}
 				/* Выдаём сообщение */
 				else
 				{
-					memset (&this->buffer, 0, sizeof this->buffer);
-					int recv_size = recv (socket, this->buffer, sizeof this->buffer, 0);
-
-					/* Ошибка при чтении данных с сокета */
-					if (recv_size == -1)
-					{
-						err ((string)"Ошибка сети. Этап «read». Подробнее: " + strerror(errno));
-					}
-
-					/* Закрыть соединение */
-					if (recv_size == 0)
-					{
-						FD_CLR (socket, &this->fd_all);
-						close (socket);
-						continue;
-					}
-
-					/* Читаем сообщение и возвращаем ответ. */
-					string message = (string)"Держи ответку: " + buffer;
-					int send_size = send (socket, message.c_str(), message.length() + 1, 0);
-					if (send_size == -1)
-					{
-						err ((string)"Ошибка сети. Этап «send_answer». Подробнее: " + strerror(errno));
-					}
-
+					this->client_message_read (socket);
 				}
 			}
 		}
@@ -304,30 +314,76 @@ namespace cashka
 	/**
 	 * Добавить нового клиента
 	 * 
+	 * @param int master
 	 * @return void
 	 */
-	void Server::client_add ()
+	void Server::client_add (int master)
 	{
-		
+		int socket_new;
+		struct sockaddr_storage their_addr;
+		socklen_t addr_size = sizeof their_addr;
+
+		if ((socket_new = accept (master, (struct sockaddr *)&their_addr, &addr_size)) == -1)
+		{
+			err ((string)"Ошибка сети. Этап «accept». Подробнее: " + strerror(errno));
+		}
+
+		if (socket_new > this->fd_max)
+		{
+			this->fd_max = socket_new;
+		}
+
+		int send_size = send (socket_new, this->msg_hello, strlen (this->msg_hello) + 1, 0);
+		if (send_size == -1)
+		{
+			err ((string)"Ошибка сети. Этап «send_hello». Подробнее: " + strerror(errno));
+		}
+
+		FD_SET (socket_new, &this->fd_all);
 	}
 	
 	/**
 	 * Отключить клиента
 	 * 
+	 * @param int socket
 	 * @return void
 	 */
-	void Server::client_close ()
+	void Server::client_close (int socket)
 	{
-		
+		FD_CLR (socket, &this->fd_all);
+		close (socket);
 	}
 	
 	/**
 	 * Прочитать сообщение от клиента
 	 * 
+	 * @param int socket
 	 * @return void
 	 */
-	void Server::message_read ()
+	void Server::client_message_read (int socket)
 	{
-		
+		memset (&this->buffer, 0, sizeof this->buffer);
+		int recv_size = recv (socket, this->buffer, sizeof this->buffer, 0);
+
+		/* Ошибка при чтении данных с сокета */
+		if (recv_size == -1)
+		{
+			err ((string)"Ошибка сети. Этап «read». Подробнее: " + strerror(errno));
+		}
+
+		/* Закрыть соединение */
+		if (recv_size == 0)
+		{
+			this->client_close (socket);
+			return;
+		}
+
+		/* Читаем сообщение и возвращаем ответ. */
+		string message = (string)"Держи ответку: " + buffer;
+		int send_size = send (socket, message.c_str(), message.length() + 1, 0);
+		if (send_size == -1)
+		{
+			err ((string)"Ошибка сети. Этап «send_answer». Подробнее: " + strerror(errno));
+		}
 	}
 }

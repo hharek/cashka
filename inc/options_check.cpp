@@ -42,19 +42,19 @@ namespace cashka
 	}
 
 	/**
-	 * Проверить опцию «process_name»
+	 * Проверить опцию «process-title»
 	 * 
-	 * @param const char * process_name
+	 * @param const char * process_title
 	 * @return void
 	 */
-	void Options::check_process_name  (const char * process_name)
+	void Options::check_process_title  (const char * process_title)
 	{
-		if (std::strlen(process_name) > 32)
+		if (std::strlen(process_title) > 32)
 		{
-			err ("Опция «process_name» задана неверно. Не должен превышать 32 символа (байтов).", "config");
+			err ("Опция «process-title» задана неверно. Не должна превышать 32 символа (байтов).", "config");
 		}
 
-		for (const char * c = process_name; *c; c++)
+		for (const char * c = process_title; *c; c++)
 		{
 			if 
 			(
@@ -64,7 +64,7 @@ namespace cashka
 				*c != '-'
 			)
 			{
-				err ("Опция «process_name» задана неверно. Допускаются символы a-z, 0-9, «_», «-».", "config");
+				err ("Опция «process-title» задана неверно. Допускаются символы a-z, 0-9, «_», «-».", "config");
 			}
 		}
 	}
@@ -103,5 +103,24 @@ namespace cashka
 			err ("Порт задан неверно. Необходимо указать порт в диапазоне от 1024 до 65535.", type);
 		}
 	}
-
+	
+	/**
+	 * Проверить параметр «unix-socket»
+	 * 
+	 * @return void
+	 */
+	void Options::check_unix_socket ()
+	{
+		if (!this->unix_socket.empty())
+		{
+			if 
+			(
+				(!this->config_host.empty() || !this->cli_host.empty()) ||
+				(this->config_port != 0 || this->cli_port)
+			)
+			{
+				err ("Нельзя задать одновременно опцию «host» или «port» и «unix-socket».");
+			}
+		}
+	}
 }

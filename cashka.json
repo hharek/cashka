@@ -1,6 +1,6 @@
 {
-	"process_name": "cashka",
-	"pid_file": "cashka.pid",
+	"process-title": "cashka",
+	"pid-file": "cashka.pid",
 	"host": "localhost",
 	"port": 3000
 }
