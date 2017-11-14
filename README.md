@@ -47,6 +47,26 @@ $ cashka -h
   cashka restart
   cashka status
 ```
+
+$ cashka-cli -h
+```
+Применение: cashka-cli [ОПЦИИ]
+Опции:
+  -h    --help          - показать справку
+  -v    --version       - показать версию программы и выйти
+  -c    --config        - указать конфигурационный файл
+  -H    --host          - указать хост (по умолчанию: 127.0.0.1)
+  -P    --port          - указать порт (по умолчанию: 3000)
+  -u    --unix-socket   - указать путь к unix-сокету
+
+Примеры:
+  cashka-cli -h
+  cashka-cli --version
+  cashka-cli -c my.json
+  cashka-cli -H 127.0.0.1 -P 3000
+  cashka-cli --unix-socket=cashka.sock
+```
+
 ### Другое
 - [CHANGELOG](https://github.com/hharek/cashka/wiki/CHANGELOG)
 - [ROADMAP](https://github.com/hharek/cashka/wiki/ROADMAP)
