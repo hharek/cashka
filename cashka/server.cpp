@@ -1,22 +1,11 @@
 #include <iostream>
 #include <cstring>
-#include <cstdlib>
-#include <string>
-
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
 #include <sys/un.h>
-#include <exception>
-#include <stdexcept>
-#include <cstdio>
-#include <cerrno>
 #include <fcntl.h>
 #include <unistd.h>
-#include <exception>
-#include <stdexcept>
 
 #include "cashka.h"
 #include "options.h"

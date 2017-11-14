@@ -1,12 +1,13 @@
 #include <string>
+#include <exception>
 #include <stdexcept>
 
-#include "cashka.h"
+#include "cashka-cli.h"
 
 using std::string;
 using std::invalid_argument;
 
-namespace cashka
+namespace cashka_cli
 {
 	/**
 	 * Сгенерировать исключение

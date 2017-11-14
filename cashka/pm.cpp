@@ -1,17 +1,14 @@
 #include <string>
-#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
-#include <sys/types.h>
 #include <signal.h>
 #include <sys/prctl.h>
 
 #include "cashka.h"
 #include "options.h"
 #include "pm.h"
-#include "server.h"
 
 extern char ** environ;
 

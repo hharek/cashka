@@ -3,13 +3,13 @@
 #include <getopt.h>
 #include <stdlib.h>
 
-#include "cashka.h"
+#include "cashka-cli.h"
 #include "options.h"
 
 
 extern int opterr;
 
-namespace cashka
+namespace cashka_cli
 {
 
 	/**
@@ -21,10 +21,6 @@ namespace cashka
 	 */
 	void Options::cli (int argc, char ** argv)
 	{
-		/* Сохраняем оригинальные argc, argv для смены заголовка */
-		this->argv = argv;
-		this->argc = argc;
-		
 		/* Парсим опции */
 		opterr = 0;
 		int opt = 0;
@@ -32,57 +28,45 @@ namespace cashka
 
 		opt = getopt_long (argc, argv, this->cli_getopt, this->cli_getopt_long, &index);
 
-		while (opt != -1) 
+		while (opt != -1)
 		{
-			switch (opt) 
+			switch (opt)
 			{
 				case 'h':
 				{
 					this->cli_help();
 				}
-				break;
+					break;
 
 				case 'v':
 				{
 					this->cli_version();
 				}
-				break;
+					break;
 
 				case 'c':
 				{
 					this->cli_config_file_set (optarg);
 				}
-				break;
-
-				case 'f':
-				{
-					this->cli_foreground_set = true;
-				}
-				break;
-
-				case 'p':
-				{
-					this->cli_pid_file_set (optarg);
-				}
-				break;
+					break;
 
 				case 'H':
 				{
 					this->cli_host_set (optarg);
 				}
-				break;
+					break;
 
 				case 'P':
 				{
 					this->cli_port_set (optarg);
 				}
-				break;
-				
+					break;
+
 				case 'u':
 				{
 					this->cli_unix_socket_set (optarg);
 				}
-				break;
+					break;
 
 				case '?':
 				{
@@ -93,40 +77,6 @@ namespace cashka
 
 			opt = getopt_long (argc, argv, this->cli_getopt, this->cli_getopt_long, &index);
 		}
-
-		/* Определяем команду */
-		char * command = nullptr;
-
-		if (optind >= argc)
-		{
-			err ("Не указана команда. Используйте: «start», «stop», «restart», «status».", "cli");
-		}
-
-		while (optind < argc)
-		{
-			if (command != nullptr)
-			{
-				err ("Указано несколько команд.", "cli");
-			}
-
-			command = argv[optind];
-			optind++;
-		}
-
-		this->cli_command_set (command);
-
-	}
-
-	/**
-	 * Проверить и назначить команду
-	 * 
-	 * @param const char * command
-	 * @return void
-	 */
-	void Options::cli_command_set (const char * command)
-	{
-		this->check_command (command);
-		this->command = command;
 	}
 
 	/**
@@ -136,32 +86,21 @@ namespace cashka
 	 */
 	void Options::cli_help ()
 	{
-		std::cout << R"(Применение: cashka [ОПЦИИ] КОМАНДА
+		std::cout << R"(Применение: cashka-cli [ОПЦИИ]
 Опции:
   -h    --help          - показать справку
   -v    --version       - показать версию программы и выйти
-  -p    --pid-file      - указать pid-файл
   -c    --config        - указать конфигурационный файл
-  -f    --foreground    - запустить процесс на переднем плане (не в фоне)
   -H    --host          - указать хост (по умолчанию: 127.0.0.1)
   -P    --port          - указать порт (по умолчанию: 3000)
   -u    --unix-socket   - указать путь к unix-сокету
 
-Команды:
-  start     - запуск сервера 
-  stop      - стоп сервера
-  restart   - перезагрузить сервер
-  status    - статус сервера
-
 Примеры:
-  cashka -h
-  cashka --version
-  cashka -p my.pid -c my.json start
-  cashka -H 127.0.0.1 -P 3000
-  cashka --unix-socket=cashka.sock
-  cashka stop
-  cashka restart
-  cashka status
+  cashka-cli -h
+  cashka-cli --version
+  cashka-cli -c my.json
+  cashka-cli -H 127.0.0.1 -P 3000
+  cashka-cli --unix-socket=cashka.sock
 )";
 
 		exit (EXIT_SUCCESS);
@@ -188,17 +127,6 @@ namespace cashka
 	{
 		this->check_config_file (config_file);
 		this->cli_config_file = config_file;
-	}
-
-	/**
-	 * Назначить pid-файл
-	 * 
-	 * @param const char * pid_file
-	 * @return void
-	 */
-	void Options::cli_pid_file_set (const char * pid_file)
-	{
-		this->cli_pid_file = pid_file;
 	}
 
 	/**

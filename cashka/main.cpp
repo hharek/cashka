@@ -1,9 +1,5 @@
 #include <string>
 #include <iostream>
-#include <unistd.h>
-#include <getopt.h>
-#include <exception>
-#include <stdexcept>
 
 #include "cashka.h"
 #include "options.h"
