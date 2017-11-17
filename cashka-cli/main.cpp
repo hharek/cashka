@@ -1,13 +1,10 @@
-#include <string>
-#include <iostream>
-
-#include "cashka-cli.h"
 #include "options.h"
 #include "client.h"
 
 using std::string;
 
 using cashka_cli::Options;
+using cashka_cli::Client;
 
 int main (int argc, char ** argv)
 {
@@ -19,9 +16,9 @@ int main (int argc, char ** argv)
 		opt.config ();
 		opt.merge ();
 
-
-
-
+		/* Обрабатываем команды */
+		Client client (opt);
+		client.on ();
 
 		return EXIT_SUCCESS;
 	}

@@ -131,7 +131,7 @@ namespace cashka
 		
 		/* Определяем кол-во мастер сокетов */
 		struct addrinfo * ai; 
-		for (ai = this->addrinfo; ai != NULL; ai = ai->ai_next)
+		for (ai = this->addrinfo; ai != nullptr; ai = ai->ai_next)
 		{
 			this->master_count ++;
 		}
@@ -139,7 +139,7 @@ namespace cashka
 		
 		/* Создаём мастер сокеты */
 		int i = 0;
-		for (ai = this->addrinfo; ai != NULL; ai = ai->ai_next)
+		for (ai = this->addrinfo; ai != nullptr; ai = ai->ai_next)
 		{
 			/* Создаём основной сокет */
 			if ((this->master[i] = socket (ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1)
@@ -249,7 +249,7 @@ namespace cashka
 			this->select_timeout.tv_sec = this->select_timeout_sec;
 			this->select_timeout.tv_usec = this->select_timeout_usec;
 			
-			int select_result = select (fd_max + 1, &fd_read, NULL, NULL, &this->select_timeout);
+			int select_result = select (this->fd_max + 1, &fd_read, NULL, NULL, &this->select_timeout);
 			
 			/* Ошибка */
 			if (select_result == -1)
@@ -263,7 +263,7 @@ namespace cashka
 				continue;
 			}
 
-			for (int i = 0; i <= fd_max; i++)
+			for (int i = 0; i <= this->fd_max; i++)
 			{
 				int socket = i;
 
@@ -357,7 +357,9 @@ namespace cashka
 		/* Ошибка при чтении данных с сокета */
 		if (recv_size == -1)
 		{
-			err ((string)"Ошибка сети. Этап «read». Подробнее: " + strerror(errno));
+//			err ((string)"Ошибка сети. Этап «read». Подробнее: " + strerror(errno));
+			this->client_close (socket);
+			return;
 		}
 
 		/* Закрыть соединение */

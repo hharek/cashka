@@ -54,8 +54,8 @@ namespace cashka_cli
 		{
 			if
 			(
-					(!this->config_host.empty() || !this->cli_host.empty()) ||
-					(this->config_port != 0 || this->cli_port)
+				(!this->config_host.empty() || !this->cli_host.empty()) ||
+				(this->config_port != 0 || this->cli_port)
 			)
 			{
 				err ("Нельзя задать одновременно опцию «host» или «port» и «unix-socket».");
