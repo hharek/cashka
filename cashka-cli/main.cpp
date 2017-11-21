@@ -18,6 +18,7 @@ int main (int argc, char ** argv)
 
 		/* Обрабатываем команды */
 		Client client (opt);
+		client.connect_by_options ();
 		client.on ();
 
 		return EXIT_SUCCESS;

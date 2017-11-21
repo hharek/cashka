@@ -100,6 +100,7 @@ namespace cashka_cli
   cashka-cli --version
   cashka-cli -c my.json
   cashka-cli -H 127.0.0.1 -P 3000
+  cashka-cli -H ::1 -P 3000
   cashka-cli --unix-socket=cashka.sock
 )";
 

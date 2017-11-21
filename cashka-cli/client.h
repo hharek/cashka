@@ -26,6 +26,7 @@ namespace cashka_cli
 
 			/* Установленно ли соединение */
 			bool is_connect = false;
+			bool is_connect_info = false;
 
 			/* Тип соединения (ip, unix) */
 			string connect_type;
@@ -39,7 +40,7 @@ namespace cashka_cli
 			int fd_max = 1;							/* Макс. дескриптор для select */
 			struct timeval select_timeout;			/* Таймаут */
 			int select_timeout_sec = 0;				/* Таймаут в секундах */
-			int select_timeout_usec = 200000;		/* Таймаут в микросекундах */
+			int select_timeout_usec = 100000;		/* Таймаут в микросекундах */
 
 		public:
 
@@ -50,37 +51,43 @@ namespace cashka_cli
 			/* Ожидание комманд с клавиатуры и с устройства */
 			void on ();
 
+			/* Соединится по опциям */
+			void connect_by_options ();
+
 			/* Показать текст ошибки */
 			void err (string message);
 
 		private:
 
 			/* Чтение данных с клавиатуры */
-			void read_stdin ();
+			void _read_stdin ();
 
 			/* Читаем данные с сокета */
-			void read_socket ();
+			void _read_socket ();
 
 			/* Спарсить строку команды */
-			void parse (const char * buffer);
+			void _parse_stdin (const char * buffer);
 
 			/* Соединится с сервером по протоколу IPv4/IPv6 */
-			void connect (const char * host, const char * port);
+			void _connect (const char * host, const char * port);
 
 			/* Соединится по UNIX-сокету */
-			void connect_unix (const char * unix_socket);
+			void _connect_unix (const char * unix_socket);
 
 			/* Закрыть соединение */
-			void close ();
+			void _close ();
 
 			/* Отправить сообщение */
-			void send (const char * msg);
+			void _send (const char * msg);
 
 			/* Проверка параметров команды */
-			void check_param_connect (const char * param);
-			void check_param_connect_unix (const char * param);
+			string * _parse_connect (const char * param);
+			const char * _parse_connect_unix (const char * param);
 
 			/* Показать */
 			void _connect_info ();
+
+			/* Показать справку */
+			void _help ();
 	};
 }

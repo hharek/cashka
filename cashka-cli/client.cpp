@@ -21,14 +21,54 @@ namespace cashka_cli
 	/**
 	 * Конструктор
 	 */
-	Client::Client (Options & options) : options (options) {}
+	Client::Client (Options & options) : options (options)
+	{
+		if (options.get_unix_socket().empty())
+		{
+			this->host = options.get_host ();
+			this->port = std::to_string (options.get_port ());
+		}
+		else
+		{
+			this->unix_socket = options.get_unix_socket ();
+		}
+
+		/* Поготавливаем множества для прослушки */
+		FD_ZERO (&this->fd_read);
+		FD_ZERO (&this->fd_all);
+
+		/* Добавляем клавиатуру во множество */
+		FD_SET (STDIN_FILENO, &fd_all);
+	}
 
 	/**
 	 * Деструктор
 	 */
 	Client::~Client ()
 	{
-		this->close ();
+		this->_close ();
+	}
+
+	/**
+	 * Соединится по опциям
+	 */
+	void Client::connect_by_options ()
+	{
+		try
+		{
+			if (!this->unix_socket.empty ())
+			{
+				this->_connect_unix (this->unix_socket.c_str ());
+			}
+			else if (!this->host.empty () && !this->port.empty ())
+			{
+				this->_connect (this->host.c_str (), this->port.c_str ());
+			}
+		}
+		catch (string & message)
+		{
+			cout << "Ошибка: " << message << endl;
+		}
 	}
 
 	/**
@@ -36,14 +76,6 @@ namespace cashka_cli
 	 */
 	void Client::on ()
 	{
-		this->_connect_info ();
-
-		FD_ZERO (&this->fd_read);
-		FD_ZERO (&this->fd_all);
-
-		/* Слушаем клавиатуру */
-		FD_SET (STDIN_FILENO, &fd_all);
-
 		do
 		{
 			/* Добавляем сокеты в read */
@@ -61,9 +93,10 @@ namespace cashka_cli
 				err ((string)"Ошибка сети. Этап «select». Подробнее: " + strerror(errno));
 			}
 
-			/* Данные не пришли на сокеты */
+			/* Данные не пришли на сокеты и на клавиатуру */
 			if (select_result < 1)
 			{
+				this->_connect_info ();
 				continue;
 			}
 
@@ -82,12 +115,12 @@ namespace cashka_cli
 					/* Данные с клавиатуры */
 					if (fd == STDIN_FILENO)
 					{
-						this->read_stdin ();
+						this->_read_stdin ();
 					}
 					/* Данные с сокета */
 					else if (fd == this->socket)
 					{
-						this->read_socket ();
+						this->_read_socket ();
 					}
 				}
 				catch (string & message)
@@ -96,8 +129,8 @@ namespace cashka_cli
 				}
 			}
 
-			this->_connect_info ();
-
+			/* Информация о соединении стёрта */
+			this->is_connect_info = false;
 		}
 		while (true);
 	}
@@ -115,7 +148,7 @@ namespace cashka_cli
 	/**
 	 * Чтение данные с клавиатуры
 	 */
-	void Client::read_stdin ()
+	void Client::_read_stdin ()
 	{
 		char buffer[512] = { 0 };
 		int read_size = read (STDIN_FILENO, buffer, 512);
@@ -132,26 +165,37 @@ namespace cashka_cli
 		{
 			if (this->is_connect)
 			{
-				this->close ();
+				this->_close ();
 			}
 
 			exit (EXIT_SUCCESS);
 		}
 
 		/* Парсим и выполняем команду */
-		this->parse (buffer);
+		this->_parse_stdin (buffer);
 	}
 
 	/**
 	 * Читаем данные с сокета
 	 */
-	void Client::read_socket ()
+	void Client::_read_socket ()
 	{
 		char buffer[512] = {0};
 		int recv_size = recv (this->socket, buffer, 512, 0);
+
 		if (recv_size > 0)
 		{
 			cout << "Данные с сервера: " << buffer << endl;
+		}
+		else if (recv_size == 0)
+		{
+			cout << "Сервер закрыл соединение." << endl;
+			this->_close ();
+		}
+		else if (recv_size < 0)
+		{
+			this->err ((string)"Не удалось получить данные с сервера. Подробнее: " + strerror(errno));
+			this->_close ();
 		}
 	}
 
@@ -160,7 +204,7 @@ namespace cashka_cli
 	 *
 	 * @param const char * command
 	 */
-	void Client::parse (const char * buffer)
+	void Client::_parse_stdin (const char * buffer)
 	{
 		char * str = strdup (buffer);
 
@@ -172,23 +216,28 @@ namespace cashka_cli
 			this->err ("Не задана команда.");
 		}
 
-		if ((string)command == "connect")
+		if ((string)command == "help")
 		{
-			this->check_param_connect (param);
-			this->connect (this->host.c_str(), this->port.c_str());
+			this->_help ();
+		}
+		else if ((string)command == "connect")
+		{
+			string * ip_port = this->_parse_connect (param);
+			this->_connect (ip_port[0].c_str(), ip_port[1].c_str());
+			delete[] ip_port;
 		}
 		else if ((string)command == "connect-unix")
 		{
-			this->check_param_connect_unix (param);
-			this->connect_unix (this->unix_socket.c_str ());
+			const char * unix_socket = this->_parse_connect_unix (param);
+			this->_connect_unix (unix_socket);
 		}
 		else if ((string)command == "close")
 		{
-			this->close ();
+			this->_close ();
 		}
 		else if ((string)command == "send")
 		{
-			this->send (buffer + strlen (command) + 1);
+			this->_send (buffer + strlen (command) + 1);
 		}
 		else
 		{
@@ -202,8 +251,11 @@ namespace cashka_cli
 	 * @param const char * host
 	 * @param const char * port
 	 */
-	void Client::connect (const char * host, const char * port)
+	void Client::_connect (const char * host, const char * port)
 	{
+		cout << "Соединяюсь по адресу «" << host << ":" << port << "»" << endl;
+
+		/* Создаём сокет IP и подключаемся */
 		struct addrinfo hints, * addrinfo;
 
 		memset (&hints, 0, sizeof (hints));
@@ -217,21 +269,49 @@ namespace cashka_cli
 			this->err ((string)"Хост или порт указан неверно. Подробно: " + gai_strerror (getaddrinfo_status));
 		}
 
-		if ((this->socket = ::socket (addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol)) == -1)
+		int socket_connect = 0;
+		if ((socket_connect = ::socket (addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol)) == -1)
 		{
 			this->err ((string)"Не удалось подключиться. Подробнее: " + strerror(errno));
 		}
 
-		if (::connect (this->socket, addrinfo->ai_addr, addrinfo->ai_addrlen) == -1)
+		if (::connect (socket_connect, addrinfo->ai_addr, addrinfo->ai_addrlen) == -1)
 		{
 			this->err ((string)"Не удалось подключиться. Подробнее: " + strerror(errno));
 		}
 
+		/* Если был подключён ранее, отключаемся со старого */
+		if (this->is_connect)
+		{
+			this->_close ();
+		}
+
+		/* Обозначаем подключение */
+		this->socket = socket_connect;
 		this->is_connect = true;
 		this->connect_type = "ip";
 
 		FD_SET (this->socket, &this->fd_all);
 		this->fd_max = this->socket + 1;
+
+		/* Прописать хост на основании getaddrinfo */
+		void * addr;
+		char ip_str[INET6_ADDRSTRLEN];
+
+		if (addrinfo->ai_family == AF_INET)
+		{
+			struct sockaddr_in *ipv4 = (struct sockaddr_in *)addrinfo->ai_addr;
+			addr = &(ipv4->sin_addr);
+		}
+		else if (addrinfo->ai_family == AF_INET6)
+		{
+			struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)addrinfo->ai_addr;
+			addr = &(ipv6->sin6_addr);
+		}
+
+		inet_ntop (addrinfo->ai_family, addr, ip_str, sizeof ip_str);
+		this->host = ip_str;
+		this->port = port;
 
 		cout << "Соединение установлено." << endl;
 	}
@@ -241,27 +321,39 @@ namespace cashka_cli
 	 *
 	 * @param const char * unix_socket
 	 */
-	void Client::connect_unix (const char * unix_socket)
+	void Client::_connect_unix (const char * unix_socket)
 	{
+		cout << "Соединяюсь с unix-сокетом «" << unix_socket << "»" << endl;
+
+		/* Создаём unix-сокет и подключаемся */
 		struct sockaddr_un hints;
 		memset (&hints, 0, sizeof (struct sockaddr_un));
 		hints.sun_family = AF_LOCAL;
 		strncpy (hints.sun_path, unix_socket, sizeof (hints.sun_path) - 1);
 
-		if ((this->socket = ::socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
+		int socket_connect;
+		if ((socket_connect = ::socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
 		{
 			this->err ((string)"Не удалось подключиться. Подробнее: " + strerror(errno));
 		}
 
-		if (::connect (this->socket, (struct sockaddr *)&hints, sizeof(struct sockaddr_un)) == -1)
+		if (::connect (socket_connect, (struct sockaddr *)&hints, sizeof(struct sockaddr_un)) == -1)
 		{
 			this->err ((string)"Не удалось подключиться. Подробнее: " + strerror(errno));
 		}
 
-		this->unix_socket_basename = (string)basename (unix_socket);
+		/* Если был подключён ранее, отключаемся со старого */
+		if (this->is_connect)
+		{
+			this->_close ();
+		}
 
+		/* Обозначаем подключение */
+		this->socket = socket_connect;
 		this->is_connect = true;
 		this->connect_type = "unix";
+		this->unix_socket = unix_socket;
+		this->unix_socket_basename = (string)basename (unix_socket);
 
 		FD_SET (this->socket, &this->fd_all);
 		this->fd_max = this->socket + 1;
@@ -272,7 +364,7 @@ namespace cashka_cli
 	/**
 	 * Закрыть соединение
 	 */
-	void Client::close ()
+	void Client::_close ()
 	{
 		/* Соединение уже закрыто */
 		if (!this->is_connect)
@@ -311,7 +403,7 @@ namespace cashka_cli
 	 *
 	 * @param const char * message
 	 */
-	void Client::send (const char * message)
+	void Client::_send (const char * message)
 	{
 		if (!this->is_connect)
 		{
@@ -332,7 +424,7 @@ namespace cashka_cli
 	 *
 	 * @param const char * param
 	 */
-	void Client::check_param_connect (const char * param)
+	string * Client::_parse_connect (const char * param)
 	{
 		if (param == nullptr)
 		{
@@ -351,8 +443,11 @@ namespace cashka_cli
 			this->err ("IP адрес и порт заданы неверно.");
 		}
 
-		this->host = ip_port.substr (0, pos);
-		this->port = ip_port.substr (pos + 1);
+		string * ip_port_ar = new string[2];
+		ip_port_ar[0] = ip_port.substr (0, pos);
+		ip_port_ar[1] = ip_port.substr (pos + 1);
+
+		return ip_port_ar;
 	}
 
 	/**
@@ -360,7 +455,7 @@ namespace cashka_cli
 	 *
 	 * @param const char * param
 	 */
-	void Client::check_param_connect_unix (const char * param)
+	const char * Client::_parse_connect_unix (const char * param)
 	{
 		if (param == nullptr)
 		{
@@ -378,7 +473,7 @@ namespace cashka_cli
 			this->err ("Путь к UNIX-сокету задан неверно.");
 		}
 
-		this->unix_socket = param;
+		return param;
 	}
 
 	/**
@@ -386,6 +481,11 @@ namespace cashka_cli
 	 */
 	void Client::_connect_info ()
 	{
+		if (this->is_connect_info)
+		{
+			return;
+		}
+
 		if (this->is_connect)
 		{
 			if (this->connect_type == "ip")
@@ -400,5 +500,31 @@ namespace cashka_cli
 
 		cout << "> ";
 		cout.flush();
+
+		this->is_connect_info = true;
+	}
+
+	/**
+	 * Показать справку
+	 */
+	void Client::_help ()
+	{
+		std::cout << "cashka-cli " << options.get_version() << endl;
+
+		std::cout << R"(
+Команды:
+  connect           - соединиться с сервером по протоколу IPv4/IPv6
+  connect-unix      - соединиться с сервером по unix-сокету
+  close             - закрыть текущее соединение
+  send              - отправить сообщение
+  quit              - выход
+  exit              - выход
+
+Примеры:
+  connect 127.0.0.1:3000
+  connect ::1:3000
+  connect-unix cashka.sock
+  send test
+)";
 	}
 }

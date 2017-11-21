@@ -41,8 +41,6 @@ namespace cashka_cli
 	{
 		string dump;
 
-		string foreground = "false";
-
 		dump += "version: "			+ this->version					+ "\n";
 		dump += "config_file: "		+ this->config_file				+ "\n";
 
