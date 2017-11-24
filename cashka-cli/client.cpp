@@ -11,10 +11,12 @@
 #include "client.h"
 #include "cashka-cli.h"
 
+#include "../protocol/protocol.h"
+#include "../protocol/hello.h"
+
 using std::cout;
 using std::endl;
 using std::string;
-
 
 namespace cashka_cli
 {
@@ -183,11 +185,7 @@ namespace cashka_cli
 		char buffer[512] = {0};
 		int recv_size = recv (this->socket, buffer, 512, 0);
 
-		if (recv_size > 0)
-		{
-			cout << "Данные с сервера: " << buffer << endl;
-		}
-		else if (recv_size == 0)
+		if (recv_size == 0)
 		{
 			cout << "Сервер закрыл соединение." << endl;
 			this->_close ();
@@ -196,6 +194,26 @@ namespace cashka_cli
 		{
 			this->err ((string)"Не удалось получить данные с сервера. Подробнее: " + strerror(errno));
 			this->_close ();
+		}
+		else if (recv_size < protocol::ID_LENGTH)
+		{
+			this->err ("Слишком маленькое сообщение.");
+		}
+
+		/* Определяем тип по ID запроса */
+		char * id = new char [protocol::ID_LENGTH + 1];
+		strncpy (id, buffer, protocol::ID_LENGTH);
+//		if (this->query_send_id.find ((string)id) == this->query_send_id.end ())
+//		{
+//			this->err ("Неизвестный ID");
+//		}
+
+		string type = this->query_send_id[id];
+
+		/* Читаем сообщение */
+		if (type == "hello")
+		{
+			this->_hello_read (buffer);
 		}
 	}
 
@@ -237,7 +255,12 @@ namespace cashka_cli
 		}
 		else if ((string)command == "send")
 		{
-			this->_send (buffer + strlen (command) + 1);
+			const char * message = buffer + strlen (command) + 1;
+			this->_send (message, strlen (message));
+		}
+		else if ((string)command == "hello")
+		{
+			this->_hello_send ();
 		}
 		else
 		{
@@ -402,15 +425,16 @@ namespace cashka_cli
 	 * Отправить сообщение
 	 *
 	 * @param const char * message
+	 * @param unsigned int length
 	 */
-	void Client::_send (const char * message)
+	void Client::_send (const char * message, unsigned int length)
 	{
 		if (!this->is_connect)
 		{
 			this->err ("Вам необходимо сначала подключиться к серверу, чтобы отправлять сообщение.");
 		}
 
-		int send_size = ::send (this->socket, message, strlen(message) + 1, 0);
+		int send_size = ::send (this->socket, message, length, 0);
 		if (send_size == -1)
 		{
 			err ((string)"Не удалось отправить сообщение. Подробнее: " + strerror(errno));
@@ -516,15 +540,44 @@ namespace cashka_cli
   connect           - соединиться с сервером по протоколу IPv4/IPv6
   connect-unix      - соединиться с сервером по unix-сокету
   close             - закрыть текущее соединение
-  send              - отправить сообщение
-  quit              - выход
-  exit              - выход
+  quit (exit)       - выход
+  hello             - узнать версию сервера и проверить соответствие версий
 
 Примеры:
   connect 127.0.0.1:3000
   connect ::1:3000
   connect-unix cashka.sock
-  send test
+  hello
+  close
+  quit
 )";
+	}
+
+	/**
+	 * Отправить запрос «hello»
+	 */
+	void Client::_hello_send ()
+	{
+		protocol::Hello hello;
+		hello.query_make ();
+
+		this->query_send_id.insert ({hello.query_id (), "hello"});
+
+		this->_send (hello.query_data (), hello.query_length ());
+	}
+
+	/**
+	 * Прочитать ответ на запрос «hello»
+	 */
+	void Client::_hello_read (char * buffer)
+	{
+		protocol::Hello hello;
+		hello.answer_parse (buffer);
+
+		if (options.get_version() != (string)hello.answer_version())
+		{
+			cout << "Версии клиента и сервера не совпадают. Соряныч :(" << endl;
+			this->_close();
+		}
 	}
 }

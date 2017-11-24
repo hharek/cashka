@@ -75,6 +75,7 @@ namespace cashka
 	}
 
 	/* Получить опции */
+	const string & Options::get_server_name () 		{ return this->server_name; 	}
 	const string & Options::get_process_title ()	{ return this->process_title;	}
 	const string & Options::get_version ()			{ return this->version;			}
 	const string & Options::get_command ()			{ return this->command;			}

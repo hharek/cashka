@@ -82,8 +82,14 @@ namespace cashka
 			/* Отключить клиента */
 			void client_close (int socket);
 			
-			/* Прочитать сообщение от клиента */
-			void client_message_read (int socket);
+			/* Прочитать сообщение */
+			void _read (int socket);
+
+			/* Отправить сообщение */
+			void _send (int socket, char * message, unsigned int length);
+
+			/* Пришёл запрос «hello» */
+			void _hello (int socket, char * buffer);
 	};
 }
 

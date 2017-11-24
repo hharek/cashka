@@ -1,3 +1,5 @@
+#include <cstdlib>
+
 #include "options.h"
 #include "client.h"
 
@@ -8,6 +10,9 @@ using cashka_cli::Client;
 
 int main (int argc, char ** argv)
 {
+	/* Для функции rand */
+	srand (time(0));
+
 	try
 	{
 		/* Создаём опции */

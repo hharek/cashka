@@ -19,8 +19,9 @@ namespace cashka
 		private:
 
 			/* Опции по умолчанию */
+			const string server_name = "cashka";			/* Имя сервера */
 			string process_title = "cashka";				/* Имя процесса */
-			string version = "0.67a";						/* Версия программы */
+			string version = "0.68a";						/* Версия программы */
 			string command;									/* Команда (start, stop, restart, status) */
 			string config_file = "cashka.json";				/* Путь к конфигурационному файлу */
 			bool foreground = false;						/* Запускать процесс на переднем плане (не в фоне) */
@@ -97,6 +98,7 @@ namespace cashka
 			string dump ();
 
 			/* Получить параметры */
+			const string & get_server_name ();
 			const string & get_process_title ();
 			const string & get_version ();
 			const string & get_command ();

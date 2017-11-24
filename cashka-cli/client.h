@@ -42,6 +42,9 @@ namespace cashka_cli
 			int select_timeout_sec = 0;				/* Таймаут в секундах */
 			int select_timeout_usec = 100000;		/* Таймаут в микросекундах */
 
+			/* Отправленные запросы */
+			map <string, string> query_send_id;
+
 		public:
 
 			/* Конструктор и деструктор */
@@ -78,7 +81,7 @@ namespace cashka_cli
 			void _close ();
 
 			/* Отправить сообщение */
-			void _send (const char * msg);
+			void _send (const char * message, unsigned int length);
 
 			/* Проверка параметров команды */
 			string * _parse_connect (const char * param);
@@ -89,5 +92,11 @@ namespace cashka_cli
 
 			/* Показать справку */
 			void _help ();
+
+			/* Отправить запрос «hello» */
+			void _hello_send ();
+
+			/* Прочитать ответ на «hello» */
+			void _hello_read (char * buffer);
 	};
 }

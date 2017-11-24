@@ -11,6 +11,9 @@
 #include "options.h"
 #include "server.h"
 
+#include "../protocol/protocol.h"
+#include "../protocol/hello.h"
+
 using std::string;
 
 namespace cashka
@@ -293,7 +296,7 @@ namespace cashka
 				/* Выдаём сообщение */
 				else
 				{
-					this->client_message_read (socket);
+					this->_read (socket);
 				}
 			}
 		}
@@ -349,7 +352,7 @@ namespace cashka
 	 * @param int socket
 	 * @return void
 	 */
-	void Server::client_message_read (int socket)
+	void Server::_read (int socket)
 	{
 		memset (&this->buffer, 0, sizeof this->buffer);
 		int recv_size = recv (socket, this->buffer, sizeof this->buffer, 0);
@@ -357,7 +360,7 @@ namespace cashka
 		/* Ошибка при чтении данных с сокета */
 		if (recv_size == -1)
 		{
-//			err ((string)"Ошибка сети. Этап «read». Подробнее: " + strerror(errno));
+			std::cout << "Ошибка сети. Этап «read». Подробнее: " << strerror(errno) << std::endl;
 			this->client_close (socket);
 			return;
 		}
@@ -369,12 +372,38 @@ namespace cashka
 			return;
 		}
 
-		/* Читаем сообщение и возвращаем ответ. */
-		string message = (string)"Держи ответку: " + buffer;
-		int send_size = send (socket, message.c_str(), message.length() + 1, 0);
+		/* По первому байту определяем запрос */
+		string query_type;
+		switch (this->buffer[0])
+		{
+			case 0x00:
+			{
+				this->_hello (socket, this->buffer);
+			}
+			break;
+		}
+	}
+
+	/**
+	 * Отправить сообщение
+	 */
+	void Server::_send (int socket, char * message, unsigned int length)
+	{
+		int send_size = send (socket, message, length, 0);
 		if (send_size == -1)
 		{
 			err ((string)"Ошибка сети. Этап «send_answer». Подробнее: " + strerror(errno));
 		}
+	}
+
+	/**
+	 * Пришёл запрос «hello»
+	 */
+	void Server::_hello (int socket, char * buffer)
+	{
+		protocol::Hello hello;
+		hello.query_parse (buffer);
+		hello.answer_make (options.get_server_name ().c_str (), options.get_version ().c_str ());
+		this->_send (socket, hello.answer_data(), hello.answer_length());
 	}
 }
