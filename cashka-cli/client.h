@@ -43,7 +43,7 @@ namespace cashka_cli
 			int select_timeout_usec = 100000;		/* Таймаут в микросекундах */
 
 			/* Отправленные запросы */
-			map <string, string> query_send_id;
+			map <string, string> query_id;
 
 		public:
 
@@ -69,7 +69,7 @@ namespace cashka_cli
 			void _read_socket ();
 
 			/* Спарсить строку команды */
-			void _parse_stdin (const char * buffer);
+			void _parse_stdin (const char * buf);
 
 			/* Соединится с сервером по протоколу IPv4/IPv6 */
 			void _connect (const char * host, const char * port);
@@ -81,7 +81,7 @@ namespace cashka_cli
 			void _close ();
 
 			/* Отправить сообщение */
-			void _send (const char * message, unsigned int length);
+			void _send (const unsigned char * message, const unsigned int length);
 
 			/* Проверка параметров команды */
 			string * _parse_connect (const char * param);
@@ -97,6 +97,6 @@ namespace cashka_cli
 			void _hello_send ();
 
 			/* Прочитать ответ на «hello» */
-			void _hello_read (char * buffer);
+			void _hello_read (unsigned char * buf);
 	};
 }

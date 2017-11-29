@@ -16,10 +16,10 @@ set(cashka_SOURCE_FILES
 		cashka/pm.h
 		cashka/server.cpp
 		cashka/server.h
-        protocol/protocol.h
-        protocol/protocol.cpp
-		protocol/hello.h
-		protocol/hello.cpp)
+		query/query.h
+		query/query.cpp
+        query/hello.h
+        query/hello.cpp)
 
 add_executable(cashka ${cashka_SOURCE_FILES})
 
@@ -34,9 +34,9 @@ set(cashka_cli_SOURCE_FILES
 		cashka-cli/options_check.cpp
 		cashka-cli/options_cli.cpp
 		cashka-cli/options_config.cpp
-        protocol/protocol.h
-        protocol/protocol.cpp
-		protocol/hello.h
-		protocol/hello.cpp)
+		query/query.h
+		query/query.cpp
+        query/hello.h
+        query/hello.cpp)
 
 add_executable(cashka-cli ${cashka_cli_SOURCE_FILES})

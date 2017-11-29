@@ -41,7 +41,7 @@ namespace cashka
 			int fd_max = 0;
 			
 			/* Буффер */
-			char buffer[255];
+			unsigned char buf[255];
 			
 			/* Таймаут для select */
 			struct timeval select_timeout;
@@ -86,10 +86,10 @@ namespace cashka
 			void _read (int socket);
 
 			/* Отправить сообщение */
-			void _send (int socket, char * message, unsigned int length);
+			void _send (const int socket, const unsigned char * message, const unsigned int length);
 
 			/* Пришёл запрос «hello» */
-			void _hello (int socket, char * buffer);
+			void _hello (int socket, unsigned char * buf);
 	};
 }
 

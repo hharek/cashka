@@ -11,8 +11,8 @@
 #include "options.h"
 #include "server.h"
 
-#include "../protocol/protocol.h"
-#include "../protocol/hello.h"
+#include "../query/query.h"
+#include "../query/hello.h"
 
 using std::string;
 
@@ -354,8 +354,8 @@ namespace cashka
 	 */
 	void Server::_read (int socket)
 	{
-		memset (&this->buffer, 0, sizeof this->buffer);
-		int recv_size = recv (socket, this->buffer, sizeof this->buffer, 0);
+		memset (&this->buf, 0, sizeof this->buf);
+		int recv_size = recv (socket, this->buf, sizeof this->buf, 0);
 
 		/* Ошибка при чтении данных с сокета */
 		if (recv_size == -1)
@@ -374,11 +374,11 @@ namespace cashka
 
 		/* По первому байту определяем запрос */
 		string query_type;
-		switch (this->buffer[0])
+		switch (this->buf[0])
 		{
 			case 0x00:
 			{
-				this->_hello (socket, this->buffer);
+				this->_hello (socket, this->buf);
 			}
 			break;
 		}
@@ -387,7 +387,7 @@ namespace cashka
 	/**
 	 * Отправить сообщение
 	 */
-	void Server::_send (int socket, char * message, unsigned int length)
+	void Server::_send (const int socket, const unsigned char * message, const unsigned int length)
 	{
 		int send_size = send (socket, message, length, 0);
 		if (send_size == -1)
@@ -399,11 +399,18 @@ namespace cashka
 	/**
 	 * Пришёл запрос «hello»
 	 */
-	void Server::_hello (int socket, char * buffer)
+	void Server::_hello (int socket, unsigned char * buf)
 	{
-		protocol::Hello hello;
-		hello.query_parse (buffer);
-		hello.answer_make (options.get_server_name ().c_str (), options.get_version ().c_str ());
-		this->_send (socket, hello.answer_data(), hello.answer_length());
+		query::hello::Request request;
+		query::hello::Request::data data = request.parse (buf);
+
+		query::hello::Response response;
+		query::result result = response.make (data.id, options.get_server_name ().c_str (), options.get_version ().c_str ());
+		this->_send (socket, result.content, result.length);
+
+		/* Очищаем память */
+		delete[] data.id;
+		delete[] result.id;
+		delete[] result.content;
 	}
 }

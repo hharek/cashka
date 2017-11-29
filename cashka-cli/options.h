@@ -19,7 +19,7 @@ namespace cashka_cli
 		private:
 
 			/* Опции по умолчанию */
-			string version = "0.68a";						/* Версия программы */
+			string version = "0.69a";						/* Версия программы */
 			string config_file = "cashka-cli.json";			/* Путь к конфигурационному файлу */
 			string host = "localhost";						/* Имя хоста */
 			unsigned int port = 3000;						/* Номер порта */

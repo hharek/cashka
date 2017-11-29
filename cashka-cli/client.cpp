@@ -11,8 +11,8 @@
 #include "client.h"
 #include "cashka-cli.h"
 
-#include "../protocol/protocol.h"
-#include "../protocol/hello.h"
+#include "../query/query.h"
+#include "../query/hello.h"
 
 using std::cout;
 using std::endl;
@@ -152,18 +152,18 @@ namespace cashka_cli
 	 */
 	void Client::_read_stdin ()
 	{
-		char buffer[512] = { 0 };
-		int read_size = read (STDIN_FILENO, buffer, 512);
+		char buf[512] = { 0 };
+		int read_size = read (STDIN_FILENO, buf, 512);
 
 		if (read_size == -1)
 		{
 			this->err ("Невозможно прочитать данные с клавиатуры.");
 		}
 
-		buffer[strlen (buffer)-1] = '\0';
+		buf[strlen (buf)-1] = '\0';
 
 		/* Выход */
-		if ((string)buffer == "exit" || (string)buffer == "quit")
+		if ((string)buf == "exit" || (string)buf == "quit")
 		{
 			if (this->is_connect)
 			{
@@ -174,7 +174,7 @@ namespace cashka_cli
 		}
 
 		/* Парсим и выполняем команду */
-		this->_parse_stdin (buffer);
+		this->_parse_stdin (buf);
 	}
 
 	/**
@@ -182,8 +182,8 @@ namespace cashka_cli
 	 */
 	void Client::_read_socket ()
 	{
-		char buffer[512] = {0};
-		int recv_size = recv (this->socket, buffer, 512, 0);
+		unsigned char buf[512] = {0};
+		int recv_size = recv (this->socket, buf, 512, 0);
 
 		if (recv_size == 0)
 		{
@@ -195,25 +195,27 @@ namespace cashka_cli
 			this->err ((string)"Не удалось получить данные с сервера. Подробнее: " + strerror(errno));
 			this->_close ();
 		}
-		else if (recv_size < protocol::ID_LENGTH)
+		else if (recv_size < query::ID_LENGTH)
 		{
 			this->err ("Слишком маленькое сообщение.");
 		}
 
 		/* Определяем тип по ID запроса */
-		char * id = new char [protocol::ID_LENGTH + 1];
-		strncpy (id, buffer, protocol::ID_LENGTH);
-//		if (this->query_send_id.find ((string)id) == this->query_send_id.end ())
+		char * id = new char [query::ID_LENGTH + 1];
+		memcpy (id, buf, query::ID_LENGTH);
+		id[query::ID_LENGTH] = 0;
+
+//		if (this->query_id.find ((string)id) == this->query_id.end ())
 //		{
 //			this->err ("Неизвестный ID");
 //		}
 
-		string type = this->query_send_id[id];
+		string type = this->query_id[id];
 
 		/* Читаем сообщение */
 		if (type == "hello")
 		{
-			this->_hello_read (buffer);
+			this->_hello_read (buf);
 		}
 	}
 
@@ -222,9 +224,9 @@ namespace cashka_cli
 	 *
 	 * @param const char * command
 	 */
-	void Client::_parse_stdin (const char * buffer)
+	void Client::_parse_stdin (const char * buf)
 	{
-		char * str = strdup (buffer);
+		char * str = strdup (buf);
 
 		char * command = strtok (str, " ");
 		char * param = strtok (nullptr, " ");
@@ -252,11 +254,6 @@ namespace cashka_cli
 		else if ((string)command == "close")
 		{
 			this->_close ();
-		}
-		else if ((string)command == "send")
-		{
-			const char * message = buffer + strlen (command) + 1;
-			this->_send (message, strlen (message));
 		}
 		else if ((string)command == "hello")
 		{
@@ -427,7 +424,7 @@ namespace cashka_cli
 	 * @param const char * message
 	 * @param unsigned int length
 	 */
-	void Client::_send (const char * message, unsigned int length)
+	void Client::_send (const unsigned char * message, const unsigned int length)
 	{
 		if (!this->is_connect)
 		{
@@ -558,26 +555,37 @@ namespace cashka_cli
 	 */
 	void Client::_hello_send ()
 	{
-		protocol::Hello hello;
-		hello.query_make ();
+		query::hello::Request hello;
+		query::result result = hello.make ();
 
-		this->query_send_id.insert ({hello.query_id (), "hello"});
+		this->query_id.insert ({result.id, "hello"});
 
-		this->_send (hello.query_data (), hello.query_length ());
+		this->_send (result.content, result.length);
+
+		/* Очистить */
+		delete[] result.id;
+		delete[] result.content;
 	}
 
 	/**
 	 * Прочитать ответ на запрос «hello»
 	 */
-	void Client::_hello_read (char * buffer)
+	void Client::_hello_read (unsigned char * buf)
 	{
-		protocol::Hello hello;
-		hello.answer_parse (buffer);
+		query::hello::Response hello;
+		query::hello::Response::data data = hello.parse (buf);
 
-		if (options.get_version() != (string)hello.answer_version())
+		if (options.get_version() != (string)data.version)
 		{
 			cout << "Версии клиента и сервера не совпадают. Соряныч :(" << endl;
 			this->_close();
 		}
+
+		cout << "Сервер: " << data.name << " " << data.version << endl;
+
+		/* Очистить */
+		delete[] data.id;
+		delete[] data.name;
+		delete[] data.version;
 	}
 }

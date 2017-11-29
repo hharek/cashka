@@ -1,8 +1,8 @@
 #include <cstdlib>
 
-#include "protocol.h"
+#include "query.h"
 
-namespace protocol
+namespace query
 {
 	/**
 	 * Получить случайный ID
