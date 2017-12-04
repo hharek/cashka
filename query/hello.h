@@ -46,9 +46,9 @@ namespace query::hello
 			{
 				char * id;						/* ID */
 				bool result;					/* Результат */
-				unsigned int name_length;		/* Имя сервера. Длина */
+				uint8_t name_length;			/* Имя сервера. Длина (1 байт = от 1 до 255) */
 				char * name;					/* Имя сервера */
-				unsigned int version_length;	/* Версия сервера. Длина */
+				uint8_t version_length;			/* Версия сервера. Длина (1 байт = от 1 до 255)  */
 				char * version;					/* Версия сервера */
 			};
 

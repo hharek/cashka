@@ -50,6 +50,9 @@ namespace cashka
 			
 			/* Приветствие */
 			const char * msg_hello = "Здарова. Я простой tcp-echo сервак.\n";
+
+			/* Множество переменных */
+			map <string, string> db;
 			
 		public:
 			
@@ -90,6 +93,12 @@ namespace cashka
 
 			/* Пришёл запрос «hello» */
 			void _hello (int socket, unsigned char * buf);
+
+			/* Пришёл запрос «set» */
+			void _set (int socket, unsigned char * buf);
+
+			/* Пришёл запрос «get» */
+			void _get (int socket, unsigned char * buf);
 	};
 }
 

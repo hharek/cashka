@@ -13,6 +13,8 @@
 
 #include "../query/query.h"
 #include "../query/hello.h"
+#include "../query/set.h"
+#include "../query/get.h"
 
 using std::string;
 
@@ -376,9 +378,24 @@ namespace cashka
 		string query_type;
 		switch (this->buf[0])
 		{
+			/* hello */
 			case 0x00:
 			{
 				this->_hello (socket, this->buf);
+			}
+			break;
+
+			/* set */
+			case 0x05:
+			{
+				this->_set (socket, this->buf);
+			}
+			break;
+
+			/* set */
+			case 0x04:
+			{
+				this->_get (socket, this->buf);
 			}
 			break;
 		}
@@ -402,15 +419,58 @@ namespace cashka
 	void Server::_hello (int socket, unsigned char * buf)
 	{
 		query::hello::Request request;
-		query::hello::Request::data data = request.parse (buf);
+		auto data = request.parse (buf);
 
 		query::hello::Response response;
-		query::result result = response.make (data.id, options.get_server_name ().c_str (), options.get_version ().c_str ());
+		auto result = response.make (data.id, options.get_server_name ().c_str (), options.get_version ().c_str ());
 		this->_send (socket, result.content, result.length);
 
 		/* Очищаем память */
 		delete[] data.id;
 		delete[] result.id;
 		delete[] result.content;
+	}
+
+	/**
+	 * Пришёл запрос «set»
+	 */
+	void Server::_set (int socket, unsigned char * buf)
+	{
+		query::set::Request request;
+		auto data = request.parse (buf);
+
+		this->db.insert ({data.key, data.value});
+
+		query::set::Response response;
+		auto result = response.make (data.id);
+
+		this->_send (socket, result.content, result.length);
+	}
+
+	/**
+	 * Пришёл запрос «get»
+	 */
+	void Server::_get (int socket, unsigned char * buf)
+	{
+		/* Парсим запрос */
+		query::get::Request request;
+		auto data = request.parse (buf);
+
+		/* Находим значение */
+		query::result result;
+		if (this->db.find(data.key) != this->db.end())
+		{
+			query::get::Response response;
+			char * value = strdup (db[data.key].c_str());
+			result = response.make (data.id, value);
+		}
+		else
+		{
+			query::get::Response response;
+			result = response.make_false (data.id);
+		}
+
+		/* Отправляем */
+		this->_send (socket, result.content, result.length);
 	}
 }

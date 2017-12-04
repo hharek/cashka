@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <cstdlib>
 
 namespace query
@@ -17,4 +18,7 @@ namespace query
 
 	/* Получить случайный ID */
 	char * get_random_id ();
+
+	/* Сообщение об ошибке */
+	void err (std::string query, std::string message);
 }

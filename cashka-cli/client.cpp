@@ -13,6 +13,8 @@
 
 #include "../query/query.h"
 #include "../query/hello.h"
+#include "../query/set.h"
+#include "../query/get.h"
 
 using std::cout;
 using std::endl;
@@ -217,6 +219,14 @@ namespace cashka_cli
 		{
 			this->_hello_read (buf);
 		}
+		else if (type == "set")
+		{
+			this->_set_read (buf);
+		}
+		else if (type == "get")
+		{
+			this->_get_read (buf);
+		}
 	}
 
 	/**
@@ -229,7 +239,6 @@ namespace cashka_cli
 		char * str = strdup (buf);
 
 		char * command = strtok (str, " ");
-		char * param = strtok (nullptr, " ");
 
 		if (command == nullptr)
 		{
@@ -242,12 +251,14 @@ namespace cashka_cli
 		}
 		else if ((string)command == "connect")
 		{
+			char * param = strtok (nullptr, " ");
 			string * ip_port = this->_parse_connect (param);
 			this->_connect (ip_port[0].c_str(), ip_port[1].c_str());
 			delete[] ip_port;
 		}
 		else if ((string)command == "connect-unix")
 		{
+			char * param = strtok (nullptr, " ");
 			const char * unix_socket = this->_parse_connect_unix (param);
 			this->_connect_unix (unix_socket);
 		}
@@ -258,6 +269,39 @@ namespace cashka_cli
 		else if ((string)command == "hello")
 		{
 			this->_hello_send ();
+		}
+		else if ((string)command == "set")
+		{
+			char * key = strtok (nullptr, " ");
+			char * value = strtok (nullptr, " ");
+
+			if (key == nullptr || value == nullptr)
+			{
+				this->err ("Параметры заданы неверно.");
+			}
+
+			if (strtok (nullptr, " ") != nullptr)
+			{
+				this->err ("Параметры заданы неверно.");
+			}
+
+			this->_set_send (key, value);
+		}
+		else if ((string)command == "get")
+		{
+			char * key = strtok (nullptr, " ");
+
+			if (key == nullptr)
+			{
+				this->err ("Параметры заданы неверно.");
+			}
+
+			if (strtok (nullptr, " ") != nullptr)
+			{
+				this->err ("Параметры заданы неверно.");
+			}
+
+			this->_get_send (key);
 		}
 		else
 		{
@@ -551,12 +595,12 @@ namespace cashka_cli
 	}
 
 	/**
-	 * Отправить запрос «hello»
+	 * Запрос «hello». Отправить
 	 */
 	void Client::_hello_send ()
 	{
 		query::hello::Request hello;
-		query::result result = hello.make ();
+		auto result = hello.make ();
 
 		this->query_id.insert ({result.id, "hello"});
 
@@ -568,12 +612,12 @@ namespace cashka_cli
 	}
 
 	/**
-	 * Прочитать ответ на запрос «hello»
+	 * Запрос «hello». Прочитать ответ
 	 */
 	void Client::_hello_read (unsigned char * buf)
 	{
 		query::hello::Response hello;
-		query::hello::Response::data data = hello.parse (buf);
+		auto data = hello.parse (buf);
 
 		if (options.get_version() != (string)data.version)
 		{
@@ -587,5 +631,74 @@ namespace cashka_cli
 		delete[] data.id;
 		delete[] data.name;
 		delete[] data.version;
+	}
+
+	/**
+	 * Запрос «set». Отправить
+	 */
+	void Client::_set_send (char * key, char * value)
+	{
+		query::set::Request set;
+		auto result = set.make (key, value);
+
+		this->query_id.insert ({result.id, "set"});
+
+		this->_send (result.content, result.length);
+
+		/* Очистить */
+		delete[] result.id;
+		delete[] result.content;
+	}
+
+	/**
+	 * Запрос «set». Прочитать ответ
+	 */
+	void Client::_set_read (unsigned char * buf)
+	{
+		query::set::Response set;
+		auto data = set.parse (buf);
+
+		cout << "Ключ добавлен." << endl;
+
+		/* Очистить */
+		delete[] data.id;
+	}
+
+	/**
+	 * Запрос «get». Отправить
+	 */
+	void Client::_get_send (char * key)
+	{
+		query::get::Request get;
+		auto result = get.make (key);
+
+		this->query_id.insert ({result.id, "get"});
+
+		this->_send (result.content, result.length);
+
+		/* Очистить */
+		delete[] result.id;
+		delete[] result.content;
+	}
+
+	/**
+	 * Запрос «get». Прочитать ответ
+	 */
+	void Client::_get_read (unsigned char * buf)
+	{
+		query::get::Response get;
+		auto data = get.parse (buf);
+
+		if (data.isset)
+		{
+			cout << data.value << endl;
+		}
+		else
+		{
+			cout << "Указанный ключ отсутствует." << endl;
+		}
+
+		/* Очистить */
+		delete[] data.id;
 	}
 }

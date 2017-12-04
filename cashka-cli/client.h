@@ -93,10 +93,16 @@ namespace cashka_cli
 			/* Показать справку */
 			void _help ();
 
-			/* Отправить запрос «hello» */
+			/* Запрос «hello» */
 			void _hello_send ();
-
-			/* Прочитать ответ на «hello» */
 			void _hello_read (unsigned char * buf);
+
+			/* Запрос «set» */
+			void _set_send (char * key, char * value);
+			void _set_read (unsigned char * buf);
+
+			/* Запрос «get» */
+			void _get_send (char * key);
+			void _get_read (unsigned char * buf);
 	};
 }

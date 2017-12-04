@@ -1,6 +1,10 @@
 #include <cstdlib>
+#include <string>
+#include <stdexcept>
 
 #include "query.h"
+
+using std::invalid_argument;
 
 namespace query
 {
@@ -21,5 +25,13 @@ namespace query
 		id[ID_LENGTH] = 0;
 
 		return id;
+	}
+
+	/**
+	 * Сообщение об ошибке
+	 */
+	void err (std::string query, std::string message)
+	{
+		throw invalid_argument ((std::string)"Запрос «" + query + "». " + message);
 	}
 }
