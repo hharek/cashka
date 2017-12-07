@@ -15,6 +15,7 @@
 #include "../query/hello.h"
 #include "../query/set.h"
 #include "../query/get.h"
+#include "../query/isset.h"
 
 using std::cout;
 using std::endl;
@@ -227,6 +228,10 @@ namespace cashka_cli
 		{
 			this->_get_read (buf);
 		}
+		else if (type == "isset")
+		{
+			this->_isset_read (buf);
+		}
 	}
 
 	/**
@@ -302,6 +307,22 @@ namespace cashka_cli
 			}
 
 			this->_get_send (key);
+		}
+		else if ((string)command == "isset")
+		{
+			char * key = strtok (nullptr, " ");
+
+			if (key == nullptr)
+			{
+				this->err ("Параметры заданы неверно.");
+			}
+
+			if (strtok (nullptr, " ") != nullptr)
+			{
+				this->err ("Параметры заданы неверно.");
+			}
+
+			this->_isset_send (key);
 		}
 		else
 		{
@@ -583,14 +604,20 @@ namespace cashka_cli
   close             - закрыть текущее соединение
   quit (exit)       - выход
   hello             - узнать версию сервера и проверить соответствие версий
+  set               - создать ключ со значением
+  get               - получить значение ключа
+  isset             - проверка наличия ключа
 
 Примеры:
   connect 127.0.0.1:3000
   connect ::1:3000
   connect-unix cashka.sock
   hello
+  set key1 value1
+  get key1
+  isset key1
   close
-  quit
+  quit (exit)
 )";
 	}
 
@@ -696,6 +723,44 @@ namespace cashka_cli
 		else
 		{
 			cout << "Указанный ключ отсутствует." << endl;
+		}
+
+		/* Очистить */
+		delete[] data.id;
+	}
+
+	/**
+	 * Запрос «isset». Отправить
+	 */
+	void Client::_isset_send (char * key)
+	{
+		query::isset::Request isset;
+		auto result = isset.make (key);
+
+		this->query_id.insert ({result.id, "isset"});
+
+		this->_send (result.content, result.length);
+
+		/* Очистить */
+		delete[] result.id;
+		delete[] result.content;
+	}
+
+	/**
+	 * Запрос «isset». Прочитать ответ
+	 */
+	void Client::_isset_read (unsigned char * buf)
+	{
+		query::isset::Response isset;
+		auto data = isset.parse (buf);
+
+		if (data.isset)
+		{
+			cout << "Ключ присутствует." << endl;
+		}
+		else
+		{
+			cout << "Ключ отсутствует." << endl;
 		}
 
 		/* Очистить */

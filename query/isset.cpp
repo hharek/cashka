@@ -1,9 +1,9 @@
 #include <arpa/inet.h>
 
 #include "query.h"
-#include "get.h"
+#include "isset.h"
 
-namespace query::get
+namespace query::isset
 {
 	/**
 	 * Создать запрос
@@ -16,7 +16,7 @@ namespace query::get
 		/* Создаём строку */
 		unsigned int length =
 				1 +						/* type */
-				query::ID_LENGTH + 			/* id */
+				query::ID_LENGTH + 		/* id */
 				2 + 					/* key_length */
 				strlen (key); 			/* key */
 
@@ -99,67 +99,11 @@ namespace query::get
 
 	/**
 	 * Создать ответ
-	 * ----------------------------------------------
-	 * | id | result | isset | value_length | value |
-	 * ----------------------------------------------
-	 */
-	query::result Response::make (char * id, char * value)
-	{
-		unsigned int length =
-				query::ID_LENGTH + 		/* id */
-				1 + 					/* result */
-				1 +						/* isset */
-				4 + 					/* value_length */
-				strlen (value);			/* value */
-
-		unsigned char * content = new unsigned char[length];
-		unsigned char * pos = content;
-
-		/* id */
-		memcpy (pos, id, strlen (id));
-		pos += strlen (id);
-
-		/* result */
-		pos[0] = (unsigned char)true;
-		pos += 1;
-
-		/* isset */
-		pos[0] = (unsigned char)true;
-		pos += 1;
-
-		/* value_length */
-		if (strlen (value) > 4294967295)
-		{
-			err ("get", "Этап request-make. Значение не должно превышать 4 Гб.");
-		}
-
-		uint32_t value_length = strlen (value);
-		value_length = htonl (value_length);
-		memcpy (pos, &value_length, 4);
-		pos += 4;
-
-		/* value */
-		if (value != nullptr)
-		{
-			memcpy (pos, value, strlen (value));
-			pos += strlen (value);
-		}
-
-		return
-		{
-			.id = strdup (id),
-			.content = content,
-			.length = length
-		};
-	}
-
-	/**
-	 * Создать ответ «ключ отсутствует»
 	 * -----------------------
 	 * | id | result | isset |
 	 * -----------------------
 	 */
-	query::result Response::make_false (char * id)
+	query::result Response::make (char * id, bool isset)
 	{
 		unsigned int length =
 				query::ID_LENGTH + 		/* id */
@@ -178,7 +122,7 @@ namespace query::get
 		pos += 1;
 
 		/* isset */
-		pos[0] = (unsigned char)false;
+		pos[0] = (unsigned char)isset;
 		pos += 1;
 
 		return
@@ -191,9 +135,9 @@ namespace query::get
 
 	/**
 	 * Спарсить ответ
-	 * ----------------------------------------------
-	 * | id | result | isset | value_length | value |
-	 * ----------------------------------------------
+	 * -----------------------
+	 * | id | result | isset |
+	 * -----------------------
 	 */
 	Response::data Response::parse (unsigned char * buf)
 	{
@@ -213,33 +157,11 @@ namespace query::get
 		bool isset = (bool)pos[0];
 		pos += 1;
 
-		/* value_length */
-		uint32_t value_length = 0;
-		memcpy (&value_length, pos, 4);
-		value_length = ntohl (value_length);
-		if (value_length > 4294967295)
-		{
-			err ("get", "Этап request-parse. Значение не должно превышать 4 Гб.");
-		}
-		pos += 4;
-
-		/* value */
-		char * value = nullptr;
-		if (value_length != 0)
-		{
-			value = new char[value_length + 1];
-			memcpy (value, pos, value_length);
-			value[value_length] = 0;
-			pos += value_length;
-		}
-
 		return
 		{
 			.id = id,
 			.result = result,
-			.isset = isset,
-			.value_length = value_length,
-			.value = value
+			.isset = isset
 		};
 	}
 }

@@ -104,5 +104,9 @@ namespace cashka_cli
 			/* Запрос «get» */
 			void _get_send (char * key);
 			void _get_read (unsigned char * buf);
+
+			/* Запрос «isset» */
+			void _isset_send (char * key);
+			void _isset_read (unsigned char * buf);
 	};
 }

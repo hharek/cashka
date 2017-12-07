@@ -1,6 +1,7 @@
+#include <arpa/inet.h>
+
 #include "query.h"
 #include "set.h"
-#include <arpa/inet.h>
 
 namespace query::set
 {
@@ -15,7 +16,7 @@ namespace query::set
 		/* Создаём строку */
 		unsigned int length =
 			1 +						/* type */
-			ID_LENGTH + 			/* id */
+			query::ID_LENGTH + 		/* id */
 			2 + 					/* key_length */
 			strlen (key) + 			/* key */
 			4 + 					/* value_length */
@@ -84,7 +85,7 @@ namespace query::set
 		/* id */
 		char * id = new char[query::ID_LENGTH + 1];
 		memcpy (id, pos, query::ID_LENGTH);
-		id[ID_LENGTH] = 0;
+		id[query::ID_LENGTH] = 0;
 		pos += query::ID_LENGTH;
 
 		/* key_length */

@@ -99,6 +99,9 @@ namespace cashka
 
 			/* Пришёл запрос «get» */
 			void _get (int socket, unsigned char * buf);
+
+			/* Пришёл запрос «isset» */
+			void _isset (int socket, unsigned char * buf);
 	};
 }
 

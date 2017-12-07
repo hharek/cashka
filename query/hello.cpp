@@ -1,7 +1,7 @@
+#include <cstring>
+
 #include "query.h"
 #include "hello.h"
-
-#include <cstring>
 
 namespace query::hello
 {
@@ -13,7 +13,7 @@ namespace query::hello
 	 */
 	query::result Request::make ()
 	{
-		unsigned int length = 1 + ID_LENGTH;
+		unsigned int length = 1 + query::ID_LENGTH;
 		unsigned char * content = new unsigned char[length];
 		unsigned char * pos = content;
 

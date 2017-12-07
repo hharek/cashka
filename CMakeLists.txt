@@ -23,7 +23,9 @@ set(cashka_SOURCE_FILES
 		query/set.h
 		query/set.cpp
 		query/get.h
-		query/get.cpp)
+		query/get.cpp
+		query/isset.h
+		query/isset.cpp)
 
 add_executable(cashka ${cashka_SOURCE_FILES})
 
@@ -45,6 +47,8 @@ set(cashka_cli_SOURCE_FILES
 		query/set.h
 		query/set.cpp
 		query/get.h
-		query/get.cpp)
+		query/get.cpp
+		query/isset.h
+		query/isset.cpp)
 
 add_executable(cashka-cli ${cashka_cli_SOURCE_FILES})

@@ -15,6 +15,7 @@
 #include "../query/hello.h"
 #include "../query/set.h"
 #include "../query/get.h"
+#include "../query/isset.h"
 
 using std::string;
 
@@ -392,10 +393,17 @@ namespace cashka
 			}
 			break;
 
-			/* set */
+			/* get */
 			case 0x04:
 			{
 				this->_get (socket, this->buf);
+			}
+			break;
+
+			/* isset */
+			case 0x06:
+			{
+				this->_isset (socket, this->buf);
 			}
 			break;
 		}
@@ -471,6 +479,26 @@ namespace cashka
 		}
 
 		/* Отправляем */
+		this->_send (socket, result.content, result.length);
+	}
+
+	/**
+	 * Пришёл запрос «isset»
+	 */
+	void Server::_isset (int socket, unsigned char * buf)
+	{
+		query::isset::Request request;
+		auto data = request.parse (buf);
+
+		bool isset = false;
+		if (this->db.find(data.key) != this->db.end())
+		{
+			isset = true;
+		}
+
+		query::isset::Response response;
+		auto result = response.make (data.id, isset);
+
 		this->_send (socket, result.content, result.length);
 	}
 }
