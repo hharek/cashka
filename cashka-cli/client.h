@@ -42,8 +42,8 @@ namespace cashka_cli
 			int select_timeout_sec = 0;				/* Таймаут в секундах */
 			int select_timeout_usec = 100000;		/* Таймаут в микросекундах */
 
-			/* Отправленные запросы */
-			map <string, string> query_id;
+			/* Последний тип запроса */
+			unsigned char query_type = 0x00;
 
 		public:
 

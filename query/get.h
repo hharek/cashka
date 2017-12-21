@@ -10,9 +10,9 @@ namespace query::get
 
 	/**
 	 * Запрос
-	 * --------------------------------
-	 * | type | id | key_length | key |
-	 * --------------------------------
+	 * --------------------------------------
+	 * | type | key_length | key | checksum |
+	 * --------------------------------------
 	 */
 	class Request
 	{
@@ -21,10 +21,10 @@ namespace query::get
 			/* Данные запроса */
 			struct data
 			{
-				const unsigned char type;		/* Тип */
-				char * id;						/* ID  */
+				unsigned char type;				/* Тип */
 				uint16_t key_length;			/* Ключ. Длина (2 байта = от 1 до 65535) */
 				char * key;						/* Ключ */
+				uint32_t checksum;				/* Контрольная сумма */
 			};
 
 			/* Создать */
@@ -36,9 +36,12 @@ namespace query::get
 
 	/**
 	 * Ответ
-	 * ----------------------------------------------
-	 * | id | result | isset | value_length | value |
-	 * ----------------------------------------------
+	 * -------------------------------------------------------------------
+	 * | result (true) | isset (true)  | value_length | value | checksum |
+	 * -------------------------------------------------------------------
+	 * --------------------------------------------
+	 * | result (true) | isset (false) | checksum |
+	 * --------------------------------------------
 	 */
 	class Response
 	{
@@ -47,18 +50,18 @@ namespace query::get
 			/* Данные */
 			struct data
 			{
-				char * id;						/* ID */
 				bool result;					/* Результат */
 				bool isset;						/* Существует ли ключ */
 				uint32_t value_length;			/* Значение. Длина (4 байта = от 1 до 4294967295) */
 				char * value;					/* Значение */
+				uint32_t checksum;				/* Контрольная сумма */
 			};
 
 			/* Создать */
-			query::result make (char * id, char * value);
+			query::result make (char * value);
 
 			/* Создать ответ «ключ отсутствует» */
-			query::result make_false (char * id);
+			query::result make_false ();
 
 			/* Спарсить */
 			data parse (unsigned char * buf);

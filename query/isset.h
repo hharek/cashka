@@ -6,13 +6,13 @@
 
 namespace query::isset
 {
-	const unsigned char TYPE = 0x06;
+	const unsigned char TYPE = 0x08;
 
 	/**
 	 * Запрос
-	 * --------------------------------
-	 * | type | id | key_length | key |
-	 * --------------------------------
+	 * --------------------------------------
+	 * | type | key_length | key | checksum |
+	 * --------------------------------------
 	 */
 	class Request
 	{
@@ -21,10 +21,10 @@ namespace query::isset
 			/* Данные запроса */
 			struct data
 			{
-				const unsigned char type;		/* Тип */
-				char * id;						/* ID  */
+				unsigned char type;				/* Тип */
 				uint16_t key_length;			/* Ключ. Длина (2 байта = от 1 до 65535) */
 				char * key;						/* Ключ */
+				uint32_t checksum;				/* Контрольная сумма */
 			};
 
 			/* Создать */
@@ -36,9 +36,9 @@ namespace query::isset
 
 	/**
 	 * Ответ
-	 * -----------------------
-	 * | id | result | isset |
-	 * -----------------------
+	 * ------------------------------------
+	 * | result (true) | isset | checksum |
+	 * ------------------------------------
 	 */
 	class Response
 	{
@@ -47,13 +47,13 @@ namespace query::isset
 			/* Данные */
 			struct data
 			{
-				char * id;						/* ID */
 				bool result;					/* Результат */
 				bool isset;						/* Существует ли ключ */
+				uint32_t checksum;				/* Контрольная сумма */
 			};
 
 			/* Создать */
-			query::result make (char * id, bool isset);
+			query::result make (bool isset);
 
 			/* Спарсить */
 			data parse (unsigned char * buf);

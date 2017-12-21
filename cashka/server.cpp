@@ -255,7 +255,7 @@ namespace cashka
 			this->select_timeout.tv_sec = this->select_timeout_sec;
 			this->select_timeout.tv_usec = this->select_timeout_usec;
 			
-			int select_result = select (this->fd_max + 1, &fd_read, NULL, NULL, &this->select_timeout);
+			int select_result = select (this->fd_max + 1, &fd_read, nullptr, nullptr, &this->select_timeout);
 			
 			/* Ошибка */
 			if (select_result == -1)
@@ -328,11 +328,11 @@ namespace cashka
 			this->fd_max = socket_new;
 		}
 
-		int send_size = send (socket_new, this->msg_hello, strlen (this->msg_hello) + 1, 0);
-		if (send_size == -1)
-		{
-			err ((string)"Ошибка сети. Этап «send_hello». Подробнее: " + strerror(errno));
-		}
+//		int send_size = send (socket_new, this->msg_hello, strlen (this->msg_hello) + 1, 0);
+//		if (send_size == -1)
+//		{
+//			err ((string)"Ошибка сети. Этап «send_hello». Подробнее: " + strerror(errno));
+//		}
 
 		FD_SET (socket_new, &this->fd_all);
 	}
@@ -376,32 +376,31 @@ namespace cashka
 		}
 
 		/* По первому байту определяем запрос */
-		string query_type;
 		switch (this->buf[0])
 		{
 			/* hello */
-			case 0x00:
+			case query::hello::TYPE:
 			{
 				this->_hello (socket, this->buf);
 			}
 			break;
 
 			/* set */
-			case 0x05:
+			case query::set::TYPE:
 			{
 				this->_set (socket, this->buf);
 			}
 			break;
 
 			/* get */
-			case 0x04:
+			case query::get::TYPE:
 			{
 				this->_get (socket, this->buf);
 			}
 			break;
 
 			/* isset */
-			case 0x06:
+			case query::isset::TYPE:
 			{
 				this->_isset (socket, this->buf);
 			}
@@ -427,15 +426,26 @@ namespace cashka
 	void Server::_hello (int socket, unsigned char * buf)
 	{
 		query::hello::Request request;
-		auto data = request.parse (buf);
+		query::hello::Request::data data;
 
 		query::hello::Response response;
-		auto result = response.make (data.id, options.get_server_name ().c_str (), options.get_version ().c_str ());
-		this->_send (socket, result.content, result.length);
+		query::result result;
+
+		try
+		{
+			data = request.parse (buf);
+			result = response.make (options.get_server_name ().c_str (), options.get_version ().c_str ());
+
+			this->_send (socket, result.content, result.length);
+		}
+		catch (const char * error)
+		{
+			auto err_result = query::err_make (error);
+			this->_send (socket, err_result.content, err_result.length);
+			delete[] err_result.content;
+		}
 
 		/* Очищаем память */
-		delete[] data.id;
-		delete[] result.id;
 		delete[] result.content;
 	}
 
@@ -445,14 +455,28 @@ namespace cashka
 	void Server::_set (int socket, unsigned char * buf)
 	{
 		query::set::Request request;
-		auto data = request.parse (buf);
-
-		this->db.insert ({data.key, data.value});
+		query::set::Request::data data;
 
 		query::set::Response response;
-		auto result = response.make (data.id);
+		query::result result;
 
-		this->_send (socket, result.content, result.length);
+		try
+		{
+			/* Парсим запрос */
+			data = request.parse (buf);
+			this->db.insert ({data.key, data.value});
+
+			/* Пишем ответ */
+			result = response.make ();
+			this->_send (socket, result.content, result.length);
+		}
+		catch (const char * error)
+		{
+			auto err_result = query::err_make (error);
+			this->_send (socket, err_result.content, err_result.length);
+
+			delete[] err_result.content;
+		}
 	}
 
 	/**
@@ -460,26 +484,42 @@ namespace cashka
 	 */
 	void Server::_get (int socket, unsigned char * buf)
 	{
-		/* Парсим запрос */
 		query::get::Request request;
-		auto data = request.parse (buf);
+		query::get::Request::data data;
 
-		/* Находим значение */
+		query::get::Response response;
 		query::result result;
-		if (this->db.find(data.key) != this->db.end())
+
+		try
 		{
-			query::get::Response response;
-			char * value = strdup (db[data.key].c_str());
-			result = response.make (data.id, value);
+			/* Парсим запрос */
+			data = request.parse (buf);
+
+			/* Ишем переменную в map */
+			if (this->db.find(data.key) != this->db.end())
+			{
+				query::get::Response response;
+				char * value = strdup (db[data.key].c_str());
+				result = response.make (value);
+			}
+			else
+			{
+				query::get::Response response;
+				result = response.make_false ();
+			}
+
+			/* Отправляем ответ */
+			this->_send (socket, result.content, result.length);
 		}
-		else
+		catch (const char * error)
 		{
-			query::get::Response response;
-			result = response.make_false (data.id);
+			auto err_result = query::err_make (error);
+			this->_send (socket, err_result.content, err_result.length);
+
+			delete[] err_result.content;
 		}
 
-		/* Отправляем */
-		this->_send (socket, result.content, result.length);
+		delete[] data.key;
 	}
 
 	/**
@@ -488,17 +528,37 @@ namespace cashka
 	void Server::_isset (int socket, unsigned char * buf)
 	{
 		query::isset::Request request;
-		auto data = request.parse (buf);
-
-		bool isset = false;
-		if (this->db.find(data.key) != this->db.end())
-		{
-			isset = true;
-		}
+		query::isset::Request::data data;
 
 		query::isset::Response response;
-		auto result = response.make (data.id, isset);
+		query::result result;
 
-		this->_send (socket, result.content, result.length);
+		try
+		{
+			/* Парсим запрос */
+			data = request.parse (buf);
+
+			/* Ишем переменную в map */
+			bool isset = false;
+			if (this->db.find(data.key) != this->db.end())
+			{
+				isset = true;
+			}
+
+			/* Создаём ответ */
+			result = response.make (isset);
+
+			/* Отправляем ответ */
+			this->_send (socket, result.content, result.length);
+		}
+		catch (const char * error)
+		{
+			auto err_result = query::err_make (error);
+			this->_send (socket, err_result.content, err_result.length);
+
+			delete[] err_result.content;
+		}
+
+		delete[] data.key;
 	}
 }

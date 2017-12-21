@@ -7,19 +7,18 @@ namespace query::isset
 {
 	/**
 	 * Создать запрос
-	 * --------------------------------
-	 * | type | id | key_length | key |
-	 * --------------------------------
+	 * --------------------------------------
+	 * | type | key_length | key | checksum |
+	 * --------------------------------------
 	 */
 	query::result Request::make (char * key)
 	{
 		/* Создаём строку */
 		unsigned int length =
 				1 +						/* type */
-				query::ID_LENGTH + 		/* id */
 				2 + 					/* key_length */
-				strlen (key); 			/* key */
-
+				strlen (key) + 			/* key */
+				4;						/* checksum */
 		unsigned char * content = new unsigned char[length];
 		unsigned char * pos = content;
 
@@ -27,15 +26,10 @@ namespace query::isset
 		pos[0] = TYPE;
 		pos += 1;
 
-		/* id */
-		char * id = query::get_random_id ();
-		memcpy (pos, id, query::ID_LENGTH);
-		pos += query::ID_LENGTH;
-
 		/* key_length */
 		if (strlen (key) > 65536)
 		{
-			err ("get", "Этап request-make. Название ключа не должна превышать 64 Кб.");
+			err ("Этап request-make. Название ключа не должна превышать 64 Кб.");
 		}
 		uint16_t key_length = strlen (key);
 		key_length = htons (key_length);
@@ -46,9 +40,14 @@ namespace query::isset
 		memcpy (pos, key, strlen (key));
 		pos += strlen (key);
 
+		/* checksum */
+		uint32_t checksum = query::checksum (content, length - 4);
+		checksum = htonl (checksum);
+		memcpy (pos, &checksum, 4);
+		pos += 4;
+
 		return
 		{
-			.id = id,
 			.content = content,
 			.length = length
 		};
@@ -56,9 +55,9 @@ namespace query::isset
 
 	/**
 	 * Спарсить запрос
-	 * --------------------------------
-	 * | type | id | key_length | key |
-	 * --------------------------------
+	 * --------------------------------------
+	 * | type | key_length | key | checksum |
+	 * --------------------------------------
 	 */
 	Request::data Request::parse (unsigned char * buf)
 	{
@@ -66,20 +65,10 @@ namespace query::isset
 		unsigned char * pos = buf;
 		pos += 1;
 
-		/* id */
-		char * id = new char[query::ID_LENGTH + 1];
-		memcpy (id, pos, query::ID_LENGTH);
-		id[query::ID_LENGTH] = 0;
-		pos += query::ID_LENGTH;
-
 		/* key_length */
 		uint16_t key_length = 0;
 		memcpy (&key_length, pos, 2);
 		key_length = ntohs (key_length);
-		if (key_length > 65536)
-		{
-			err ("get", "Этап request-parse. Название ключа не должна превышать 64 Кб.");
-		}
 		pos += 2;
 
 		/* key */
@@ -88,34 +77,39 @@ namespace query::isset
 		key[key_length] = 0;
 		pos += key_length;
 
+		/* checksum */
+		uint32_t checksum = 0;
+		memcpy (&checksum, pos, 4);
+		checksum = ntohl (checksum);
+		if (checksum != query::checksum (buf, pos - buf))
+		{
+			err ("Этап request-parse. Неверная контрольная сумма.");
+		}
+		pos += 4;
+
 		return
 		{
 			.type = TYPE,
-			.id = id,
 			.key_length = key_length,
-			.key = key
+			.key = key,
+			.checksum = checksum
 		};
 	}
 
 	/**
 	 * Создать ответ
-	 * -----------------------
-	 * | id | result | isset |
-	 * -----------------------
+	 * ------------------------------------
+	 * | result (true) | isset | checksum |
+	 * ------------------------------------
 	 */
-	query::result Response::make (char * id, bool isset)
+	query::result Response::make (bool isset)
 	{
 		unsigned int length =
-				query::ID_LENGTH + 		/* id */
 				1 + 					/* result */
-				1;						/* isset */
-
+				1 +						/* isset */
+				4;						/* checksum */
 		unsigned char * content = new unsigned char[length];
 		unsigned char * pos = content;
-
-		/* id */
-		memcpy (pos, id, strlen (id));
-		pos += strlen (id);
 
 		/* result */
 		pos[0] = (unsigned char)true;
@@ -125,9 +119,14 @@ namespace query::isset
 		pos[0] = (unsigned char)isset;
 		pos += 1;
 
+		/* checksum */
+		uint32_t checksum = query::checksum (content, length - 4);
+		checksum = htonl (checksum);
+		memcpy (pos, &checksum, 4);
+		pos += 4;
+
 		return
 		{
-			.id = strdup (id),
 			.content = content,
 			.length = length
 		};
@@ -135,19 +134,13 @@ namespace query::isset
 
 	/**
 	 * Спарсить ответ
-	 * -----------------------
-	 * | id | result | isset |
-	 * -----------------------
+	 * ------------------------------------
+	 * | result (true) | isset | checksum |
+	 * ------------------------------------
 	 */
 	Response::data Response::parse (unsigned char * buf)
 	{
 		unsigned char * pos = buf;
-
-		/* id */
-		char * id = new char[query::ID_LENGTH + 1];
-		memcpy (id, pos, query::ID_LENGTH);
-		id[query::ID_LENGTH] = 0;
-		pos += query::ID_LENGTH;
 
 		/* result */
 		bool result = (bool)pos[0];
@@ -157,11 +150,21 @@ namespace query::isset
 		bool isset = (bool)pos[0];
 		pos += 1;
 
+		/* checksum */
+		uint32_t checksum = 0;
+		memcpy (&checksum, pos, 4);
+		checksum = ntohl (checksum);
+		if (checksum != query::checksum (buf, pos - buf))
+		{
+			err ("Этап response-parse. Неверная контрольная сумма.");
+		}
+		pos += 4;
+
 		return
 		{
-			.id = id,
 			.result = result,
-			.isset = isset
+			.isset = isset,
+			.checksum = checksum
 		};
 	}
 }

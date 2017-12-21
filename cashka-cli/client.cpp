@@ -198,39 +198,51 @@ namespace cashka_cli
 			this->err ((string)"Не удалось получить данные с сервера. Подробнее: " + strerror(errno));
 			this->_close ();
 		}
-		else if (recv_size < query::ID_LENGTH)
+		else if (recv_size < 5)
 		{
 			this->err ("Слишком маленькое сообщение.");
 		}
 
-		/* Определяем тип по ID запроса */
-		char * id = new char [query::ID_LENGTH + 1];
-		memcpy (id, buf, query::ID_LENGTH);
-		id[query::ID_LENGTH] = 0;
-
-//		if (this->query_id.find ((string)id) == this->query_id.end ())
-//		{
-//			this->err ("Неизвестный ID");
-//		}
-
-		string type = this->query_id[id];
+		bool result = (bool)buf[0];
 
 		/* Читаем сообщение */
-		if (type == "hello")
+		if (result)
 		{
-			this->_hello_read (buf);
+			switch (this->query_type)
+			{
+				/* hello */
+				case query::hello::TYPE:
+				{
+					this->_hello_read (buf);
+				}
+				break;
+
+				/* set */
+				case query::set::TYPE:
+				{
+					this->_set_read (buf);
+				}
+				break;
+
+				/* get */
+				case query::get::TYPE:
+				{
+					this->_get_read (buf);
+				}
+				break;
+
+				/* isset */
+				case query::isset::TYPE:
+				{
+					this->_isset_read (buf);
+				}
+				break;
+			}
 		}
-		else if (type == "set")
+		/* Сообщение об ошибке */
+		else
 		{
-			this->_set_read (buf);
-		}
-		else if (type == "get")
-		{
-			this->_get_read (buf);
-		}
-		else if (type == "isset")
-		{
-			this->_isset_read (buf);
+			this->err (query::err_parse (buf));
 		}
 	}
 
@@ -273,6 +285,7 @@ namespace cashka_cli
 		}
 		else if ((string)command == "hello")
 		{
+			this->query_type = query::hello::TYPE;
 			this->_hello_send ();
 		}
 		else if ((string)command == "set")
@@ -290,6 +303,7 @@ namespace cashka_cli
 				this->err ("Параметры заданы неверно.");
 			}
 
+			this->query_type = query::set::TYPE;
 			this->_set_send (key, value);
 		}
 		else if ((string)command == "get")
@@ -306,6 +320,7 @@ namespace cashka_cli
 				this->err ("Параметры заданы неверно.");
 			}
 
+			this->query_type = query::get::TYPE;
 			this->_get_send (key);
 		}
 		else if ((string)command == "isset")
@@ -322,6 +337,7 @@ namespace cashka_cli
 				this->err ("Параметры заданы неверно.");
 			}
 
+			this->query_type = query::isset::TYPE;
 			this->_isset_send (key);
 		}
 		else
@@ -629,12 +645,9 @@ namespace cashka_cli
 		query::hello::Request hello;
 		auto result = hello.make ();
 
-		this->query_id.insert ({result.id, "hello"});
-
 		this->_send (result.content, result.length);
 
 		/* Очистить */
-		delete[] result.id;
 		delete[] result.content;
 	}
 
@@ -644,18 +657,25 @@ namespace cashka_cli
 	void Client::_hello_read (unsigned char * buf)
 	{
 		query::hello::Response hello;
-		auto data = hello.parse (buf);
+		query::hello::Response::data data;
 
-		if (options.get_version() != (string)data.version)
+		try
 		{
-			cout << "Версии клиента и сервера не совпадают. Соряныч :(" << endl;
-			this->_close();
+			data = hello.parse (buf);
+			if (options.get_version() != (string)data.version)
+			{
+				cout << "Версии клиента и сервера не совпадают. Соряныч :(" << endl;
+				this->_close();
+			}
+
+			cout << "Сервер: " << data.name << " " << data.version << endl;
+		}
+		catch (const char * error)
+		{
+			this->err (error);
 		}
 
-		cout << "Сервер: " << data.name << " " << data.version << endl;
-
 		/* Очистить */
-		delete[] data.id;
 		delete[] data.name;
 		delete[] data.version;
 	}
@@ -666,14 +686,19 @@ namespace cashka_cli
 	void Client::_set_send (char * key, char * value)
 	{
 		query::set::Request set;
-		auto result = set.make (key, value);
+		query::result result;
 
-		this->query_id.insert ({result.id, "set"});
-
-		this->_send (result.content, result.length);
+		try
+		{
+			result = set.make (key, value);
+			this->_send (result.content, result.length);
+		}
+		catch (const char * error)
+		{
+			this->err (error);
+		}
 
 		/* Очистить */
-		delete[] result.id;
 		delete[] result.content;
 	}
 
@@ -683,12 +708,17 @@ namespace cashka_cli
 	void Client::_set_read (unsigned char * buf)
 	{
 		query::set::Response set;
-		auto data = set.parse (buf);
+		query::set::Response::data data;
 
-		cout << "Ключ добавлен." << endl;
-
-		/* Очистить */
-		delete[] data.id;
+		try
+		{
+			data = set.parse (buf);
+			cout << "Переменная назначена." << endl;
+		}
+		catch (const char * error)
+		{
+			this->err (error);
+		}
 	}
 
 	/**
@@ -697,14 +727,19 @@ namespace cashka_cli
 	void Client::_get_send (char * key)
 	{
 		query::get::Request get;
-		auto result = get.make (key);
+		query::result result;
 
-		this->query_id.insert ({result.id, "get"});
-
-		this->_send (result.content, result.length);
+		try
+		{
+			result = get.make (key);
+			this->_send (result.content, result.length);
+		}
+		catch (const char * error)
+		{
+			this->err (error);
+		}
 
 		/* Очистить */
-		delete[] result.id;
 		delete[] result.content;
 	}
 
@@ -714,19 +749,27 @@ namespace cashka_cli
 	void Client::_get_read (unsigned char * buf)
 	{
 		query::get::Response get;
-		auto data = get.parse (buf);
+		query::get::Response::data data;
 
-		if (data.isset)
+		try
 		{
-			cout << data.value << endl;
+			data = get.parse (buf);
+			if (data.isset)
+			{
+				cout << data.value << endl;
+			}
+			else
+			{
+				cout << "Указанный ключ отсутствует." << endl;
+			}
 		}
-		else
+		catch (const char * error)
 		{
-			cout << "Указанный ключ отсутствует." << endl;
+			this->err (error);
 		}
 
 		/* Очистить */
-		delete[] data.id;
+		delete[] data.value;
 	}
 
 	/**
@@ -735,14 +778,19 @@ namespace cashka_cli
 	void Client::_isset_send (char * key)
 	{
 		query::isset::Request isset;
-		auto result = isset.make (key);
+		query::result result;
 
-		this->query_id.insert ({result.id, "isset"});
-
-		this->_send (result.content, result.length);
+		try
+		{
+			result = isset.make (key);
+			this->_send (result.content, result.length);
+		}
+		catch (const char * error)
+		{
+			this->err (error);
+		}
 
 		/* Очистить */
-		delete[] result.id;
 		delete[] result.content;
 	}
 
@@ -752,18 +800,23 @@ namespace cashka_cli
 	void Client::_isset_read (unsigned char * buf)
 	{
 		query::isset::Response isset;
-		auto data = isset.parse (buf);
+		query::isset::Response::data data;
 
-		if (data.isset)
+		try
 		{
-			cout << "Ключ присутствует." << endl;
+			data = isset.parse (buf);
+			if (data.isset)
+			{
+				cout << "Ключ присутствует." << endl;
+			}
+			else
+			{
+				cout << "Ключ отсутствует." << endl;
+			}
 		}
-		else
+		catch (const char * error)
 		{
-			cout << "Ключ отсутствует." << endl;
+			this->err (error);
 		}
-
-		/* Очистить */
-		delete[] data.id;
 	}
 }

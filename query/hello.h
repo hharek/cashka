@@ -9,9 +9,9 @@ namespace query::hello
 
 	/**
 	 * Запрос
-	 * -------------
-	 * | type | id |
-	 * -------------
+	 * -------------------
+	 * | type | checksum |
+	 * -------------------
 	 */
 	class Request
 	{
@@ -20,8 +20,8 @@ namespace query::hello
 			/* Данные запроса */
 			struct data
 			{
-				const unsigned char type;		/* Тип */
-				char * id;						/* ID  */
+				unsigned char type;				/* Тип */
+				uint32_t checksum;				/* Контрольная сумма */
 			};
 
 			/* Создать */
@@ -33,9 +33,9 @@ namespace query::hello
 
 	/**
 	 * Ответ
-	 * ---------------------------------------------------------------
-	 * | id | result | name_length | name | version_length | version |
-	 * ---------------------------------------------------------------
+	 * -----------------------------------------------------------------------------
+	 * | result (true)  | name_length | version_length | name | version | checksum |
+	 * -----------------------------------------------------------------------------
 	 */
 	class Response
 	{
@@ -44,16 +44,15 @@ namespace query::hello
 			/* Данные */
 			struct data
 			{
-				char * id;						/* ID */
-				bool result;					/* Результат */
 				uint8_t name_length;			/* Имя сервера. Длина (1 байт = от 1 до 255) */
-				char * name;					/* Имя сервера */
 				uint8_t version_length;			/* Версия сервера. Длина (1 байт = от 1 до 255)  */
+				char * name;					/* Имя сервера */
 				char * version;					/* Версия сервера */
+				uint32_t checksum;				/* Контрольная сумма */
 			};
 
 			/* Создать */
-			query::result make (const char * id, const char * name, const char * version);
+			query::result make (const char * name, const char * version);
 
 			/* Спарсить */
 			data parse (unsigned char * buf);

@@ -5,20 +5,37 @@
 
 namespace query
 {
-	/* Результат создания запроса или ответа */
+	/* Максимальный размер пакета = Ethernet MSS */
+	const unsigned int pack_max_size = 1460;
+
+	/**
+	 * Результат создания запроса или ответа
+	 */
 	struct result
 	{
-		char * id;
 		unsigned char * content;
 		unsigned int length;
 	};
 
-	/* Кол-во длина ID */
-	const unsigned int ID_LENGTH = 6;
+	/* Получить контрольую сумму */
+	uint32_t checksum (const unsigned char * buf, unsigned int len);
 
-	/* Получить случайный ID */
-	char * get_random_id ();
+	/* Сгенерировать исключение с текстом ошибки */
+	void err (const char * error);
 
-	/* Сообщение об ошибке */
-	void err (std::string query, std::string message);
+	/**
+	 * Создать пакет «Сообщение об ошибке»
+	 * ----------------------------------------------------
+	 * | result (false) | error_length | error | checksum |
+	 * ----------------------------------------------------
+	 */
+	result err_make (const char * error);
+
+	/**
+	 * Распарсить пакет «Сообщение об ошибке»
+	 * ----------------------------------------------------
+	 * | result (false) | error_length | error | checksum |
+	 * ----------------------------------------------------
+	 */
+	char * err_parse (unsigned char * buf);
 }

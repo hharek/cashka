@@ -6,13 +6,13 @@
 
 namespace query::set
 {
-	const unsigned char TYPE = 0x05;
+	const unsigned char TYPE = 0x06;
 
 	/**
 	 * Запрос
-	 * -------------------------------------------------------
-	 * | type | id | key_length | key | value_length | value |
-	 * -------------------------------------------------------
+	 * -------------------------------------------------------------
+	 * | type | key_length | value_length | key | value | checksum |
+	 * -------------------------------------------------------------
 	 */
 	class Request
 	{
@@ -21,12 +21,12 @@ namespace query::set
 			/* Данные запроса */
 			struct data
 			{
-				const unsigned char type;		/* Тип */
-				char * id;						/* ID  */
-				uint16_t key_length;			/* Ключ. Длина (2 байта = от 1 до 65535) */
-				char * key;						/* Ключ */
-				uint32_t value_length;			/* Значение. Длина (4 байта = от 1 до 4294967295) */
-				char * value;					/* Значение */
+				unsigned char type;					/* Тип */
+				uint16_t key_length;				/* Ключ. Длина (2 байта = от 1 до 65535) */
+				uint32_t value_length;				/* Значение. Длина (4 байта = от 1 до 4294967295) */
+				char * key;							/* Ключ */
+				char * value;						/* Значение */
+				uint32_t checksum;					/* Контрольная сумма */
 			};
 
 			/* Создать */
@@ -38,9 +38,9 @@ namespace query::set
 
 	/**
 	 * Ответ
-	 * ---------------
-	 * | id | result |
-	 * ---------------
+	 * ----------------------------
+	 * | result (true) | checksum |
+	 * ----------------------------
 	 */
 	class Response
 	{
@@ -49,12 +49,12 @@ namespace query::set
 			/* Данные */
 			struct data
 			{
-				char * id;						/* ID */
 				bool result;					/* Результат */
+				uint32_t checksum;				/* Контрольная сумма */
 			};
 
 			/* Создать */
-			query::result make (char * id);
+			query::result make ();
 
 			/* Спарсить */
 			data parse (unsigned char * buf);

@@ -1,4 +1,5 @@
 #include <cstring>
+#include <arpa/inet.h>
 
 #include "query.h"
 #include "hello.h"
@@ -7,26 +8,31 @@ namespace query::hello
 {
 	/**
 	 * Создать запрос
-	 * -------------
-	 * | type | id |
-	 * -------------
+	 * -------------------
+	 * | type | checksum |
+	 * -------------------
 	 */
 	query::result Request::make ()
 	{
-		unsigned int length = 1 + query::ID_LENGTH;
+		/* content */
+		unsigned int length =
+					1 + 					/* type */
+					4;						/* checksum */
 		unsigned char * content = new unsigned char[length];
 		unsigned char * pos = content;
 
+		/* type */
 		pos[0] = TYPE;
 		pos += 1;
 
-		char * id = get_random_id ();
-		memcpy (pos, id, strlen (id));
-		pos += strlen (id);
+		/* checksum */
+		uint32_t checksum = query::checksum (content, length - 4);
+		checksum = htonl (checksum);
+		memcpy (pos, &checksum, 4);
+		pos += 4;
 
 		return
 		{
-			.id = id,
 			.content = content,
 			.length = length
 		};
@@ -34,67 +40,81 @@ namespace query::hello
 
 	/**
 	 * Спарсить запрос
-	 * -------------
-	 * | type | id |
-	 * -------------
+	 * -------------------
+	 * | type | checksum |
+	 * -------------------
 	 */
 	Request::data Request::parse (unsigned char * buf)
 	{
 		unsigned char * pos = buf;
+
+		/* type */
 		pos += 1;
 
-		char * id = new char[query::ID_LENGTH + 1];
-		memcpy (id, pos, query::ID_LENGTH);
-		id[query::ID_LENGTH] = 0;
-		pos += query::ID_LENGTH;
+		/* checksum */
+		uint32_t checksum = 0;
+		memcpy (&checksum, pos, 4);
+		checksum = ntohl (checksum);
+		if (checksum != query::checksum (buf, pos - buf))
+		{
+			err ("Этап request-parse. Неверная контрольная сумма.");
+		}
+		pos += 4;
 
 		return
 		{
 			.type = TYPE,
-			.id = id
+			.checksum = checksum
 		};
 	}
 
 	/**
 	 * Создаём ответ
-	 * ---------------------------------------------------------------
-	 * | id | result | name_length | name | version_length | version |
-	 * ---------------------------------------------------------------
+	 * -----------------------------------------------------------------------------
+	 * | result (true)  | name_length | version_length | name | version | checksum |
+	 * -----------------------------------------------------------------------------
 	 */
-	query::result Response::make (const char * id, const char * name, const char * version)
+	query::result Response::make (const char * name, const char * version)
 	{
+		/* content */
 		unsigned int length =
-				strlen (id) +				/* id */
-				1 +							/* result */
+				1 +							/* result (true) */
 				1 +							/* name_length */
-				strlen (name) +				/* name */
 				1 +							/* version_length */
-				strlen (version);			/* version */
-
+				strlen (name) +				/* name */
+				strlen (version) + 			/* version */
+				4;							/* checksum */
 		unsigned char * content = new unsigned char [length];
 		unsigned char * pos = content;
 
-		memcpy (pos, id, strlen (id));
-		pos += strlen (id);
-
+		/* result (true) */
 		pos[0] = (unsigned char)true;
 		pos += 1;
 
+		/* name_length */
 		pos[0] = (unsigned char)strlen (name);
 		pos += 1;
 
-		memcpy (pos, name, strlen (name));
-		pos += strlen (name);
-
+		/* version_legnth */
 		pos[0] = (unsigned char)strlen (version);
 		pos += 1;
 
+		/* name */
+		memcpy (pos, name, strlen (name));
+		pos += strlen (name);
+
+		/* version */
 		memcpy (pos, version, strlen (version));
 		pos += strlen (version);
 
+		/* checksum */
+		uint32_t checksum = query::checksum (content, length - 4);
+		checksum = htonl (checksum);
+		memcpy (pos, &checksum, 4);
+		pos += 4;
+
 		return
 		{
-			.id = strdup (id),
 			.content = content,
 			.length = length
 		};
@@ -102,46 +122,55 @@ namespace query::hello
 
 	/**
 	 * Спарсим ответ
-	 * ---------------------------------------------------------------
-	 * | id | result | name_length | name | version_length | version |
-	 * ---------------------------------------------------------------
+	 * -----------------------------------------------------------------------------
+	 * | result (true)  | name_length | version_length | name | version | checksum |
+	 * -----------------------------------------------------------------------------
 	 */
 	Response::data Response::parse (unsigned char * buf)
 	{
 		unsigned char * pos = buf;
 
-		char * id = new char[query::ID_LENGTH + 1];
-		memcpy (id, pos, query::ID_LENGTH);
-		id[query::ID_LENGTH] = 0;
-		pos += query::ID_LENGTH;
-
+		/* result */
 		bool result = (bool)pos[0];
 		pos += 1;
 
+		/* name_length */
 		uint8_t name_length = (uint8_t)pos[0];
 		pos += 1;
 
+		/* version_length */
+		uint8_t version_length = (uint8_t)pos[0];
+		pos += 1;
+
+		/* name */
 		char * name = new char[name_length + 1];
 		memcpy (name, pos, name_length);
 		name[name_length] = 0;
 		pos += name_length;
 
-		uint8_t version_length = (uint8_t)pos[0];
-		pos += 1;
-
+		/* version */
 		char * version = new char[version_length + 1];
 		memcpy (version, pos, version_length);
 		version[version_length] = 0;
 		pos += version_length;
 
+		/* checksum */
+		uint32_t checksum = 0;
+		memcpy (&checksum, pos, 4);
+		checksum = ntohl (checksum);
+		if (checksum != query::checksum (buf, pos - buf))
+		{
+			err ("Этап response-parse. Неверная контрольная сумма.");
+		}
+		pos += 4;
+
 		return
 		{
-			.id = id,
-			.result = result,
 			.name_length = name_length,
-			.name = name,
 			.version_length = version_length,
-			.version = version
+			.name = name,
+			.version = version,
+			.checksum = checksum
 		};
 	}
 }

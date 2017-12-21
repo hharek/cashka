@@ -21,7 +21,7 @@ namespace cashka
 			/* Опции по умолчанию */
 			const string server_name = "cashka";			/* Имя сервера */
 			string process_title = "cashka";				/* Имя процесса */
-			string version = "0.71a";						/* Версия программы */
+			string version = "0.72a";						/* Версия программы */
 			string command;									/* Команда (start, stop, restart, status) */
 			string config_file = "cashka.json";				/* Путь к конфигурационному файлу */
 			bool foreground = false;						/* Запускать процесс на переднем плане (не в фоне) */
