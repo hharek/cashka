@@ -1,7 +1,0 @@
-# aptitude install nlohmann-json-dev
-$ git clone https://github.com/hharek/cashka.git .
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make
-

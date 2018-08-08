@@ -2,7 +2,7 @@
 
 int main (int argc, char ** argv)
 {
-    printf("cashka. Сервер");
+    printf("cashka. Клиент");
 
     return 0;
 }
