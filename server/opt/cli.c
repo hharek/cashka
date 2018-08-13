@@ -1,13 +1,13 @@
-#include "opt.h"
+#include <stdio.h>
 
 /**
  * Получить опции по CLI
  */
-struct opt opt_cli (int argc, char ** argv)
+int opt_cli (int argc, char ** argv, struct opt * o)
 {
-	struct opt o;
+	printf ("Опции CLI.\n");
 
-	return o;
+	return 0;
 }
 
 

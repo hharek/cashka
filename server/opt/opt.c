@@ -1,22 +1,16 @@
 #include <stddef.h>
+#include <stdio.h>
 
-#include "opt.h"
-#include "cli.c"
-#include "cfg.c"
-#include "def.c"
+#include "../inc/err.h"
 
 /**
  * Получить опции
  */
-struct opt opt (int argc, char ** argv)
+int opt (int argc, char ** argv, struct opt * o)
 {
-	struct opt o_cli = opt_cli (argc, argv);
-	struct opt o_cfg = opt_cfg ();
-	struct opt o_def = opt_def ();
+	printf ("Опции.\n");
 
-	struct opt o;
-
-	return o;
+	return err_set (CASHKA_ERR_1, "Сообщение об ошибке", NULL);
 }
 
 

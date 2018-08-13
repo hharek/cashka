@@ -1,15 +1,15 @@
 #include <stddef.h>
 #include <stdbool.h>
-
-#include "opt.h"
+#include <stdio.h>
 
 /**
  * Получить опции по конфигурации
  */
-struct opt opt_cfg ()
+int opt_cfg (struct opt * o)
 {
-	struct opt o;
-	return o;
+	printf ("Опции Cfg.\n");
+
+	return 0;
 }
 
 

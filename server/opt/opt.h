@@ -25,12 +25,12 @@ char * opt_dump (struct opt * cli, struct opt * cfg, struct opt * def);
 /**
  * Получить опции
  */
-struct opt opt (int argc, char ** argv);
+int opt (int argc, char ** argv, struct opt * o);
 
 /**
  * Получить опции по командной строке
  */
-struct opt opt_cli (int argc, char ** argv);
+int opt_cli (int argc, char ** argv, struct opt * o);
 
 int opt_cli_command (char * command, void * ptr);
 int opt_cli_config_file (char * config_file, void * ptr);
@@ -46,12 +46,12 @@ void opt_cli_version ();
 /**
  * Получить опции по конфигурационному файлу
  */
-struct opt opt_cfg ();
+int opt_cfg (struct opt * o);
 
 /**
  * Опции по умолчанию
  */
-struct opt opt_def ();
+int opt_def (struct opt * o);
 
 
 
