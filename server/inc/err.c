@@ -15,7 +15,8 @@ const char * err_mess[] =
 	[CLI_CONFIG_NOT_EXIST] = "Конфигурационный файл указан неверно.",
 	[CLI_PORT_INCORRECT] = "Порт задан неверно.",
 	[CLI_COMMAND_UNKNOWN] = "Неизвестная команда.",
-	[CLI_HOST_UNIX_SOCKET] = "Нельзя указать одновременно «--host» или «--port» и «--unix-socket»."
+	[CLI_HOST_UNIX_SOCKET] = "Нельзя указать одновременно «--host» или «--port» и «--unix-socket».",
+	[CFG_PARSING_ERROR] = "Ошибка в конфигурационном файле: %s"
 };
 
 /**

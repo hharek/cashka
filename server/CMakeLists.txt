@@ -4,6 +4,8 @@ project(cashka_server)
 set(CMAKE_C_STANDARD 11)
 
 add_executable(cashka
+                        ../confi/confi.h
+                        ../confi/confi.c
                         inc/cashka.h
                         inc/err.h
                         inc/err.c

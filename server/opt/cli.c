@@ -75,22 +75,16 @@ int opt_cli (int argc, char ** argv, struct opt * o)
 				break;
 
 			case 'H':
-				if (o->unix_socket != NULL)
-					return err_set (CLI_HOST_UNIX_SOCKET, NULL);
 				o->host = strdup (optarg);
 				break;
 
 			case 'P':
-				if (o->unix_socket != NULL)
-					return err_set (CLI_HOST_UNIX_SOCKET, NULL);
 				o->port = (unsigned int)strtoul (optarg, &strtoul_end, 0);
 				if (*strtoul_end)
 					return err_set (CLI_PORT_INCORRECT, NULL);
 				break;
 
 			case 'u':
-				if (o->host != NULL || o->port != 0)
-					return err_set (CLI_HOST_UNIX_SOCKET, NULL);
 				o->unix_socket = strdup (optarg);
 				break;
 
