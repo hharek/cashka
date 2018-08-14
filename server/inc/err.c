@@ -1,6 +1,22 @@
 #include <stdio.h>
 #include <string.h>
+
 #include "err.h"
+
+/**
+ * Массив с ошибками
+ */
+const char * err_mess[] =
+{
+	[SUCCESS] = "Ошибок нет. Ура.",
+	[CLI_UNKNOWN_OPTION] = "Неизвестная опция. Используйте --help для получения справки.",
+	[CLI_NOT_COMMAND] = "Не указана команда. Используйте: «start», «stop», «restart», «status» или «--help» для получения справки.",
+	[CLI_MANY_COMMAND] = "Указано несколько команд. Используйте --help для получения справки.",
+	[CLI_CONFIG_NOT_EXIST] = "Конфигурационный файл указан неверно.",
+	[CLI_PORT_INCORRECT] = "Порт задан неверно.",
+	[CLI_COMMAND_UNKNOWN] = "Неизвестная команда.",
+	[CLI_HOST_UNIX_SOCKET] = "Нельзя указать одновременно «--host» или «--port» и «--unix-socket»."
+};
 
 /**
  * Инициализируем глобальную переменную с сообщением о последней ошибке
@@ -10,18 +26,14 @@ struct err err;
 /**
  * Назначить сообщение об ошибке
  */
-enum err_code err_set (enum err_code code, const char * format, const char * param)
+enum err_code err_set (enum err_code code, const char * param)
 {
 	err.code = code;
 
 	if (param != NULL)
-	{
-		sprintf (err.message, format, param);
-	}
+		sprintf (err.message, err_mess[code], param);
 	else
-	{
-		strncpy (err.message, format, 2048);
-	}
+		strncpy (err.message, err_mess[code], 2048);
 
 	return code;
 }
