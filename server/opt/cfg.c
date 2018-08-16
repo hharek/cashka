@@ -22,6 +22,8 @@
  */
 int opt_cfg (struct opt * o)
 {
+	int result;
+
 	/* Структура для конфигурационного файла */
 	struct opt o_cfg =
 	{
@@ -30,7 +32,10 @@ int opt_cfg (struct opt * o)
 		.foreground = false,
 		.host = NULL,
 		.port = 0,
-		.unix_socket = NULL
+		.unix_socket = NULL,
+
+		.config_file = NULL,
+		.command = NULL
 	};
 
 	/* Парсим через confi */
@@ -45,13 +50,14 @@ int opt_cfg (struct opt * o)
 		NULL
 	};
 
-	int result = confi (o->config_file, confi_params);
+	result = confi (o->config_file, confi_params);
 	if (result != 0)
-	{
 		return err_set (CFG_PARSING_ERROR, confi_err ()->message);
-	}
 
 	/* Проверяем */
+	result = opt_check (&o_cfg, "cfg");
+	if (result != 0)
+		return result;
 
 	/* Назначаем */
 

@@ -25,6 +25,17 @@
  */
 int opt_cli (int argc, char ** argv, struct opt * o)
 {
+	/* Инициализируем структуру нулями */
+	struct opt o_cli;
+	o_cli.process_title = NULL;
+	o_cli.config_file = NULL;
+	o_cli.foreground = false;
+	o_cli.pid_file = NULL;
+	o_cli.host = NULL;
+	o_cli.port = 0;
+	o_cli.unix_socket = NULL;
+	o_cli.command = NULL;
+
 	/* Опции для функции getopt () */
 	const char * cli_getopt = "hvc:fp:H:P:u:";
 
@@ -63,29 +74,29 @@ int opt_cli (int argc, char ** argv, struct opt * o)
 				break;
 
 			case 'c':
-				o->config_file = strdup (optarg);
+				o_cli.config_file = strdup (optarg);
 				break;
 
 			case 'f':
-				o->foreground = true;
+				o_cli.foreground = true;
 				break;
 
 			case 'p':
-				o->pid_file = strdup (optarg);
+				o_cli.pid_file = strdup (optarg);
 				break;
 
 			case 'H':
-				o->host = strdup (optarg);
+				o_cli.host = strdup (optarg);
 				break;
 
 			case 'P':
-				o->port = (unsigned int)strtoul (optarg, &strtoul_end, 0);
+				o_cli.port = (unsigned int)strtoul (optarg, &strtoul_end, 0);
 				if (*strtoul_end)
 					return err_set (CLI_PORT_INCORRECT, NULL);
 				break;
 
 			case 'u':
-				o->unix_socket = strdup (optarg);
+				o_cli.unix_socket = strdup (optarg);
 				break;
 
 			case '?':
@@ -115,27 +126,31 @@ int opt_cli (int argc, char ** argv, struct opt * o)
 		optind++;
 	}
 
-	if
-	(
-		strcmp (command, "start") != 0 &&
-		strcmp (command, "stop") != 0 &&
-		strcmp (command, "restart") != 0 &&
-		strcmp (command, "status") != 0
-	)
-	{
-		return err_set (CLI_COMMAND_UNKNOWN, NULL);
-	}
-
 	o->command = strdup (command);
 
-//	/* Отладочные сообщения */
-//	printf ("config_file: %s\n", o->config_file);
-//	printf ("foreground: %i\n", o->foreground);
-//	printf ("pid_file: %s\n", o->pid_file);
-//	printf ("host: %s\n", o->host);
-//	printf ("port: %i\n", o->port);
-//	printf ("unix_socket: %s\n", o->unix_socket);
-//	printf ("command: %s\n", o->command);
+	/* Проверяем */
+	int result = opt_check (&o_cli, "cli");
+	if (result != 0)
+		return result;
+
+	/* Назначаем */
+	if (o_cli.config_file != NULL)
+		o->config_file = o_cli.config_file;
+
+	if (o_cli.foreground == true)
+		o->foreground = true;
+
+	if (o_cli.pid_file != NULL)
+		o->pid_file = o_cli.pid_file;
+
+	if (o_cli.host != NULL)
+		o->host = o_cli.host;
+
+	if (o_cli.port != 0)
+		o->port = o_cli.port;
+
+	if (o_cli.unix_socket != NULL)
+		o->unix_socket = o_cli.unix_socket;
 
 	return 0;
 }

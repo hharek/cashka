@@ -39,6 +39,11 @@ int opt_cfg (struct opt * o);
  */
 int opt_def (struct opt * o);
 
+/**
+ * Проверяем параметры
+ */
+int opt_check (struct opt * o, const char * type);
+
 
 
 

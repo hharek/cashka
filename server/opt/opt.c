@@ -9,7 +9,7 @@
  */
 int opt (int argc, char ** argv, struct opt * o)
 {
-	/* Инициализируем по умолчанию */
+	/* Инициализируем структуру нулями */
 	o->process_title = NULL;
 	o->config_file = NULL;
 	o->foreground = false;
@@ -30,7 +30,8 @@ int opt (int argc, char ** argv, struct opt * o)
 			return err_get()->code;
 	}
 
-
+	/* По умолчанию */
+	opt_def (o);
 
 	return 0;
 }
