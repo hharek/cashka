@@ -73,7 +73,7 @@ int opt_check (struct opt * o, const char * type)
 	}
 
 	/* port */
-	if (o->port != NULL)
+	if (o->port != 0)
 	{
 		if (o->unix_socket != NULL)
 		{

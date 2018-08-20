@@ -20,48 +20,49 @@
 /**
  * Получить опции по конфигурации
  */
-int opt_cfg (struct opt * o)
+struct opt * opt_cfg (char * file)
 {
-	int result;
+	/* Инициализируем структуру */
+	struct opt * o = opt_init ();
 
-	/* Структура для конфигурационного файла */
-	struct opt o_cfg =
+	/* Нет файла */
+	if (file == NULL)
 	{
-		.process_title = NULL,
-		.pid_file = NULL,
-		.foreground = false,
-		.host = NULL,
-		.port = 0,
-		.unix_socket = NULL,
+		opt_free (o);
+		return NULL;
+	}
 
-		.config_file = NULL,
-		.command = NULL
-	};
+	int result;
 
 	/* Парсим через confi */
 	struct confi_param confi_params[] =
 	{
-		{ .name = "process_title",	.type = CONFI_TYPE_STRING	},
-		{ .name = "pid_file",   	.type = CONFI_TYPE_STRING	},
-		{ .name = "foreground",   	.type = CONFI_TYPE_BOOLEAN	},
-		{ .name = "host",			.type = CONFI_TYPE_STRING	},
-		{ .name = "port",			.type = CONFI_TYPE_UINT		},
-		{ .name = "unix_socket",	.type = CONFI_TYPE_STRING	},
+		{ .name = "process_title",	.type = CONFI_TYPE_STRING,	.ptr = &o->process_title	},
+		{ .name = "pid_file",   	.type = CONFI_TYPE_STRING,	.ptr = &o->pid_file			},
+		{ .name = "foreground",   	.type = CONFI_TYPE_BOOLEAN,	.ptr = &o->foreground		},
+		{ .name = "host",			.type = CONFI_TYPE_STRING,	.ptr = &o->host				},
+		{ .name = "port",			.type = CONFI_TYPE_UINT,	.ptr = &o->port				},
+		{ .name = "unix_socket",	.type = CONFI_TYPE_STRING,	.ptr = &o->unix_socket		},
 		NULL
 	};
 
-	result = confi (o->config_file, confi_params);
+	result = confi (file, confi_params);
 	if (result != 0)
-		return err_set (CFG_PARSING_ERROR, confi_err ()->message);
+	{
+		err_set (CFG_PARSING_ERROR, confi_err ()->message);
+		opt_free (o);
+		return NULL;
+	}
 
 	/* Проверяем */
-	result = opt_check (&o_cfg, "cfg");
+	result = opt_check (o, "cfg");
 	if (result != 0)
-		return result;
+	{
+		opt_free (o);
+		return NULL;
+	}
 
-	/* Назначаем */
-
-	return 0;
+	return o;
 }
 
 

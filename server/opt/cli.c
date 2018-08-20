@@ -23,18 +23,10 @@
 /**
  * Получить опции по CLI
  */
-int opt_cli (int argc, char ** argv, struct opt * o)
+struct opt * opt_cli (int argc, char ** argv)
 {
-	/* Инициализируем структуру нулями */
-	struct opt o_cli;
-	o_cli.process_title = NULL;
-	o_cli.config_file = NULL;
-	o_cli.foreground = false;
-	o_cli.pid_file = NULL;
-	o_cli.host = NULL;
-	o_cli.port = 0;
-	o_cli.unix_socket = NULL;
-	o_cli.command = NULL;
+	/* Инициализируем структуру */
+	struct opt * o = opt_init ();
 
 	/* Опции для функции getopt () */
 	const char * cli_getopt = "hvc:fp:H:P:u:";
@@ -74,38 +66,44 @@ int opt_cli (int argc, char ** argv, struct opt * o)
 				break;
 
 			case 'c':
-				o_cli.config_file = strdup (optarg);
+				o->config_file = strdup (optarg);
 				break;
 
 			case 'f':
-				o_cli.foreground = true;
+				o->foreground = true;
 				break;
 
 			case 'p':
-				o_cli.pid_file = strdup (optarg);
+				o->pid_file = strdup (optarg);
 				break;
 
 			case 'H':
-				o_cli.host = strdup (optarg);
+				o->host = strdup (optarg);
 				break;
 
 			case 'P':
-				o_cli.port = (unsigned int)strtoul (optarg, &strtoul_end, 0);
+				o->port = (unsigned int)strtoul (optarg, &strtoul_end, 0);
 				if (*strtoul_end)
-					return err_set (CLI_PORT_INCORRECT, NULL);
+				{
+					err_set (CLI_PORT_INCORRECT, NULL);
+					opt_free (o);
+					return NULL;
+				}
 				break;
 
 			case 'u':
-				o_cli.unix_socket = strdup (optarg);
+				o->unix_socket = strdup (optarg);
 				break;
 
 			case '?':
-				return err_set (CLI_UNKNOWN_OPTION, NULL);
-				break;
+				err_set (CLI_UNKNOWN_OPTION, NULL);
+				opt_free (o);
+				return NULL;
 
 			default:
-				return err_set (CLI_UNKNOWN_OPTION, NULL);
-				break;
+				err_set (CLI_UNKNOWN_OPTION, NULL);
+				opt_free (o);
+				return NULL;
 		}
 
 		opt = getopt_long (argc, argv, cli_getopt, cli_getopt_long, &index);
@@ -115,12 +113,21 @@ int opt_cli (int argc, char ** argv, struct opt * o)
 	char * command = NULL;
 
 	if (optind >= argc)
-		return err_set (CLI_NOT_COMMAND, NULL);
+	{
+		err_set (CLI_NOT_COMMAND, NULL);
+		opt_free (o);
+		return NULL;
+	}
+
 
 	while (optind < argc)
 	{
 		if (command != NULL)
-			return err_set (CLI_MANY_COMMAND, NULL);
+		{
+			err_set (CLI_MANY_COMMAND, NULL);
+			opt_free (o);
+			return NULL;
+		}
 
 		command = argv[optind];
 		optind++;
@@ -129,30 +136,14 @@ int opt_cli (int argc, char ** argv, struct opt * o)
 	o->command = strdup (command);
 
 	/* Проверяем */
-	int result = opt_check (&o_cli, "cli");
+	int result = opt_check (o, "cli");
 	if (result != 0)
-		return result;
+	{
+		opt_free (o);
+		return NULL;
+	}
 
-	/* Назначаем */
-	if (o_cli.config_file != NULL)
-		o->config_file = o_cli.config_file;
-
-	if (o_cli.foreground == true)
-		o->foreground = true;
-
-	if (o_cli.pid_file != NULL)
-		o->pid_file = o_cli.pid_file;
-
-	if (o_cli.host != NULL)
-		o->host = o_cli.host;
-
-	if (o_cli.port != 0)
-		o->port = o_cli.port;
-
-	if (o_cli.unix_socket != NULL)
-		o->unix_socket = o_cli.unix_socket;
-
-	return 0;
+	return o;
 }
 
 /**

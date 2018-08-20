@@ -20,32 +20,45 @@ struct opt
 /**
  * Получить опции
  */
-int opt (int argc, char ** argv, struct opt * o);
+struct opt * opt (int argc, char ** argv);
 
 /**
  * Получить опции по командной строке
  */
-int opt_cli (int argc, char ** argv, struct opt * o);
+struct opt * opt_cli (int argc, char ** argv);
+
 void opt_cli_help ();
 void opt_cli_version ();
 
 /**
  * Получить опции по конфигурационному файлу
  */
-int opt_cfg (struct opt * o);
+struct opt * opt_cfg (char * file);
 
 /**
  * Опции по умолчанию
  */
-int opt_def (struct opt * o);
+struct opt * opt_def ();
 
 /**
  * Проверяем параметры
  */
 int opt_check (struct opt * o, const char * type);
 
+/**
+ * Инициализируем структуру. Дополнительно обнуляем
+ */
+struct opt * opt_init ();
 
+/**
+ * Очистить структуру
+ */
+void opt_free (struct opt * o);
 
+/**
+ * Объединить опции (cli || cfg || def)
+ */
+struct opt * opt_join (struct opt * o_cli, struct opt * o_cfg, struct opt * o_def);
 
 
 
