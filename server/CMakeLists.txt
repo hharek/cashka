@@ -15,4 +15,6 @@ add_executable(cashka
                         opt/cfg.c
                         opt/def.c
                         opt/check.c
+                        pm/pm.h
+                        pm/pm.c
                         main.c)

@@ -28,8 +28,7 @@ struct opt * opt_cfg (char * file)
 	/* Нет файла */
 	if (file == NULL)
 	{
-		opt_free (o);
-		return NULL;
+		return o;
 	}
 
 	int result;

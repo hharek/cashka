@@ -1,39 +1,39 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "inc/cashka.h"
 #include "inc/err.h"
 #include "opt/opt.h"
+#include "pm/pm.h"
 
 int main (int argc, char ** argv)
 {
+	/* Получаем опции */
 	struct opt * o = opt (argc, argv);
 	if (o == NULL)
 	{
 		fprintf (stderr, err_get ()->message);
-		return 1;
+		return EXIT_FAILURE;
 	}
 
-//	struct opt
-//	{
-//		char * process_title;				/* Имя процесса */
-//		char * config_file;					/* Путь к конфигурационному файлу */
-//		bool foreground;					/* Запускать процесс на переднем плане (не в фоне) */
-//		char * pid_file;					/* Путь к PID-файлу */
-//		char * host;						/* Имя хоста */
-//		unsigned int port;					/* Номер порта */
-//		char * unix_socket;					/* Путь к unix-сокету */
-//		char * command;						/* Команда (start, stop, restart, status) */
-//	};
+	/* Выполняем команду */
+	int result = 0;
+	if (strcmp (o->command, "start") == 0)
+		result = start (o);
+	else if (strcmp (o->command, "stop") == 0)
+		result = stop (o);
+	else if (strcmp (o->command, "restart") == 0)
+		result = restart (o);
+	else if (strcmp (o->command, "status") == 0)
+		result = status (o);
 
-	printf ("process_title = %s\n", o->process_title);
-	printf ("config_file = %s\n", o->config_file);
-	printf ("foreground = %i\n", o->foreground);
-	printf ("pid_file = %s\n", o->pid_file);
-	printf ("host = %s\n", o->host);
-	printf ("port = %i\n", o->port);
-	printf ("unix_socket = %s\n", o->unix_socket);
-	printf ("command = %s\n", o->command);
+	/* Ошибка */
+	if (result != 0)
+	{
+		fprintf (stderr, err_get ()->message);
+		return EXIT_FAILURE;
+	}
 
-
-    return 0;
+    return EXIT_SUCCESS;
 }
