@@ -122,20 +122,30 @@ struct opt * opt_join (struct opt * o_cli, struct opt * o_cfg, struct opt * o_de
 	else
 		o->pid_file = strdup (o_def->pid_file);
 
-	/* host (cli || cfg || def) */
-	if (!o_cli->unix_socket && !o_cfg->unix_socket)
+	/* Определяем, что прописать «host + port» или «unix_socket» */
+	const char * type;
+	if (o_cli->host || o_cli->port)
+		type = "host+port";
+	else if (o_cli->unix_socket)
+		type = "unix-socket";
+	else if (o_cfg->host || o_cfg->port)
+		type = "host+port";
+	else if (o_cfg->unix_socket)
+		type = "unix-socket";
+	else
+		type = "host+port";
+
+	if (strcmp (type, "host+port") == 0)
 	{
+		/* host (cli || cfg || def) */
 		if (o_cli->host)
 			o->host = strdup (o_cli->host);
 		else if (o_cfg->host)
 			o->host = strdup (o_cfg->host);
 		else
 			o->host = strdup (o_def->host);
-	}
 
-	/* port (cli || cfg || def) */
-	if (!o_cli->unix_socket && !o_cfg->unix_socket)
-	{
+		/* port (cli || cfg || def) */
 		if (o_cli->port)
 			o->port = o_cli->port;
 		else if (o_cfg->port)
@@ -143,10 +153,9 @@ struct opt * opt_join (struct opt * o_cli, struct opt * o_cfg, struct opt * o_de
 		else
 			o->port = o_def->port;
 	}
-
-	/* unix_socket (cli || cfg || def) */
-	if (!o_cli->host && !o_cli->port && !o_cfg->host && !o_cfg->port)
+	else if (strcmp (type, "unix-socket") == 0)
 	{
+		/* unix_socket (cli || cfg || def) */
 		if (o_cli->unix_socket)
 			o->unix_socket = strdup (o_cli->unix_socket);
 		else if (o_cfg->unix_socket)
