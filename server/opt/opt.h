@@ -20,12 +20,12 @@ struct opt
 /**
  * Получить опции
  */
-struct opt * opt (int argc, char ** argv);
+struct opt * opt ();
 
 /**
  * Получить опции по командной строке
  */
-struct opt * opt_cli (int argc, char ** argv);
+struct opt * opt_cli ();
 
 void opt_cli_help ();
 void opt_cli_version ();
