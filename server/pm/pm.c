@@ -12,31 +12,27 @@
 #include "../opt/opt.h"
 #include "../pm/pm.h"
 
-extern int argc;
-extern char ** argv;
 extern char ** environ;
-
-extern pid_t cashka_pid;
 
 /**
  * Старт
  */
-int pm_start (struct opt * o)
+int pm_start (char * pid_file, bool foreground, char * process_title, int argc, char ** argv)
 {
 	/* Проверяем запушен ли процесс */
-	if (pm_is_running (o->pid_file))
+	if (pm_is_running (pid_file))
 		return err_set (PM_IS_RUNNING, NULL);
 
 	/* Форкнуть процесс */
-	if (!o->foreground)
+	if (!foreground)
 		pm_fork ();
 
 	/* Создать PID-файл */
-	if (pm_pid_file_create (o->pid_file))
+	if (pm_pid_file_create (pid_file))
 		return err_get ()->code;
 
 	/* Сменить название процесса */
-	pm_set_process_title (o->process_title);
+	pm_set_process_title (process_title, argc, argv);
 
 	/* Зацикливаемся */
 	while (true)
@@ -50,19 +46,16 @@ int pm_start (struct opt * o)
 /**
  * Стоп
  */
-int pm_stop (struct opt * o)
+int pm_stop (char * pid_file)
 {
 	/* Проверяем запущен ли процесс */
-	if (!pm_is_running(o->pid_file))
-	{
+	int pid = pm_is_running(pid_file);
+	if (!pid)
 		return err_set (PM_NOT_RUNNING, NULL);
-	}
 
 	/* Отправляем команду kill нашему процессу */
-	if (kill(cashka_pid, SIGTERM) != 0)
-	{
+	if (kill(pid, SIGTERM) != 0)
 		return err_set (PM_DO_NOT_STOP, NULL);
-	}
 
 	return 0;
 }
@@ -70,17 +63,17 @@ int pm_stop (struct opt * o)
 /**
  * Перезагрузка
  */
-int pm_restart (struct opt * o)
+int pm_restart (char * pid_file, bool foreground, char * process_title, int argc, char ** argv)
 {
 	int result = 0;
 
-	result = pm_stop (o);
+	result = pm_stop (pid_file);
 	if (result)
 		return result;
 
 	usleep (200000);
 
-	result = pm_start (o);
+	result = pm_start (pid_file, foreground, process_title, argc, argv);
 	if (result)
 		return result;
 
@@ -90,9 +83,9 @@ int pm_restart (struct opt * o)
 /**
  * Статус
  */
-int pm_status (struct opt * o)
+int pm_status (char * pid_file)
 {
-	if (pm_is_running(o->pid_file))
+	if (pm_is_running(pid_file))
 		printf ("Работает.\n");
 	else
 		printf ("Не работает.\n");
@@ -103,7 +96,7 @@ int pm_status (struct opt * o)
 /**
  * Проверить запущен ли процесс
  */
-bool pm_is_running (const char * pid_file)
+int pm_is_running (char * pid_file)
 {
 	/* Читаем содержимое pid-файла */
 	FILE * fp = fopen (pid_file, "r");
@@ -124,10 +117,7 @@ bool pm_is_running (const char * pid_file)
 
 	/* Делаем запрос kill */
 	if (kill(pid, 0) == 0)
-	{
-		cashka_pid = pid;
-		return true;
-	}
+		return pid;
 
 	return false;
 }
@@ -152,7 +142,7 @@ void pm_fork ()
 /**
  * Создать PID файл
  */
-int pm_pid_file_create (const char * pid_file)
+int pm_pid_file_create (char * pid_file)
 {
 	/* Получаем PID */
 	pid_t pid = getpid ();
@@ -178,7 +168,7 @@ int pm_pid_file_create (const char * pid_file)
 /**
  * Задать имя процессу
  */
-void pm_set_process_title (const char * title)
+void pm_set_process_title (char * title, int argc, char ** argv)
 {
 	/* Копируем argv и чистим */
 	char ** argv_old = argv;							/* Сохраняем ссылку на старый «argv» */

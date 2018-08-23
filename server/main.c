@@ -8,21 +8,13 @@
 #include "opt/opt.h"
 #include "pm/pm.h"
 
-/* Делаем глобальными «argc» и «argv» */
-int argc;
-char ** argv;
-
-/* Глобальные переменные */
-pid_t cashka_pid = 0;
-
-int main (int ac, char ** av)
+/**
+ * main ()
+ */
+int main (int argc, char ** argv)
 {
-	/* Делаем глобальными «argc» и «argv» */
-	argc = ac;
-	argv = av;
-
 	/* Получаем опции */
-	struct opt * o = opt ();
+	struct opt * o = opt (argc, argv);
 	if (o == NULL)
 	{
 		fprintf (stderr, "%s\n", err_get ()->message);
@@ -32,13 +24,13 @@ int main (int ac, char ** av)
 	/* Выполняем команду */
 	int result = 0;
 	if (strcmp (o->command, "start") == 0)
-		result = pm_start (o);
+		result = pm_start (o->pid_file, o->foreground, o->process_title, argc, argv);
 	else if (strcmp (o->command, "stop") == 0)
-		result = pm_stop (o);
+		result = pm_stop (o->pid_file);
 	else if (strcmp (o->command, "restart") == 0)
-		result = pm_restart (o);
+		result = pm_restart (o->pid_file, o->foreground, o->process_title, argc, argv);
 	else if (strcmp (o->command, "status") == 0)
-		result = pm_status (o);
+		result = pm_status (o->pid_file);
 
 	/* Ошибка */
 	if (result != 0)

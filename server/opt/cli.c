@@ -20,13 +20,10 @@
     command
 */
 
-extern int argc;
-extern char ** argv;
-
 /**
  * Получить опции по CLI
  */
-struct opt * opt_cli ()
+struct opt * opt_cli (int argc, char ** argv)
 {
 	/* Инициализируем структуру */
 	struct opt * o = opt_init ();

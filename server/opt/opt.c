@@ -10,10 +10,10 @@
 /**
  * Получить опции
  */
-struct opt * opt ()
+struct opt * opt (int argc, char ** argv)
 {
 	/* CLI */
-	struct opt * o_cli = opt_cli ();
+	struct opt * o_cli = opt_cli (argc, argv);
 	if (o_cli == NULL)
 		return NULL;
 
